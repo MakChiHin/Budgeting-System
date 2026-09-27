@@ -1,0 +1,31 @@
+# Netscape HTTP Cookie File
+# https://curl.haxx.se/rfc/cookie_spec.html
+# This is a generated file! Do not edit.
+
+.pornhub.com	TRUE	/	FALSE	1824700919	_ga	GA1.1.834270356.1693623965
+.cn.pornhub.com	TRUE	/	FALSE	1821676831	d_uidb	c9fad01e-0bd9-a045-039c-958b6c84c733
+.pornhub.com	TRUE	/	FALSE	1792732831	d_uid	c9fad01e-0bd9-a045-039c-958b6c84c733
+.pornhub.com	TRUE	/	FALSE	1792732831	d_uidb	c9fad01e-0bd9-a045-039c-958b6c84c733
+.pornhub.com	TRUE	/	TRUE	1791460640	bs	0b1ba3b47dbd472358154238abb87936
+.pornhub.com	TRUE	/	TRUE	1791460640	bsdd	0b1ba3b47dbd472358154238abb87936
+.pornhub.com	TRUE	/	TRUE	1797339959	il	v1rE3vZBcflrOmzRp9-WJs8XKk0Uii8fVEZlBZXqbqyrMxNzk3MzM5OTU5Z3RZTU8zcThnSGZRalZQdHdTWnRQM0tYajhTZmJGdmVmaVRUd0RTZg..
+.pornhub.com	TRUE	/	TRUE	1814835498	cookieConsent	3
+.pornhub.com	TRUE	/	TRUE	1819331240	sessid	790804320528929279
+.pornhub.com	TRUE	/	TRUE	1790607697	fg_7d31324eedb583147b6dcbea0051c868	63706.100000
+.pornhub.com	TRUE	/	TRUE	1820105641	ss	554981627843554797
+.pornhub.com	TRUE	/	TRUE	1791161641	comp_detect-cookies	87983.100000
+.pornhub.com	TRUE	/	TRUE	1820126567	__l	6A9B6829-42FE722901BB8E906-F924938
+.pornhub.com	TRUE	/	TRUE	1791161642	fg_afaf12e314c5419a855ddc0bf120670f	87554.100000
+.pornhub.com	TRUE	/	TRUE	1791161642	fg_55e3b6f0afd46366d6fa797544b15af2	24782.100000
+.pornhub.com	TRUE	/	TRUE	1791161642	fg_439f2555043a44b8bd91161b5deddd29	34919.100000
+.cn.pornhub.com	TRUE	/	TRUE	1791161642	tj_UUID_v2	ChCE9rbYG-NNZ6qKdrvSpXgJEgwI8_3xyAYQ6orzuAEYAyIgMGIxYmEzYjQ3ZGJkNDcyMzU4MTU0MjM4YWJiODc5MzYqDAiq0O3UBhDnhO3dAQ==
+.pornhub.com	TRUE	/	TRUE	1791362488	fg_41b1995ee5530001895f2da326e410dd	2493.100000
+.pornhub.com	TRUE	/	TRUE	1790166839	ua	bb9f4980ea5e34b8cf674a323d86c584
+.pornhub.com	TRUE	/	TRUE	1790685239	platform	pc
+cn.pornhub.com	FALSE	/	FALSE	1790685973	etavt	%7B%2266344a3f395c1%22%3A%225_2_2_pornhub.video_recommendation.93%7C2%22%2C%226a5cf984c0738%22%3A%225_2_2_pornhub.video_recommendation.93%7C1%22%2C%2269f0298ba0e1d%22%3A%225_2_2_pornhub.video_recommendation.93%7C0%22%7D
+.pornhub.com	TRUE	/	FALSE	1790143851	accessAgeDisclaimerPH	2
+.pornhub.com	TRUE	/	TRUE	0	__s	6AB3619D-42FE722901BB3955D6-6CD43CD
+.pornhub.com	TRUE	/	FALSE	0	d_fs	1
+.pornhub.com	TRUE	/	FALSE	1824700919	_ga_B39RFFWGYY	GS2.1.s1790140251$o380$g1$t1790140918$j54$l0$h0
+cn.pornhub.com	FALSE	/	FALSE	0	rp	2969037502:9f7eCjrC+Q4=
+.cn.pornhub.com	TRUE	/	TRUE	1792732954	tj_UUID	ChCE9rbYG-NNZ6qKdrvSpXgJEgwI8_3xyAYQ6orzuAEYAyIgMGIxYmEzYjQ3ZGJkNDcyMzU4MTU0MjM4YWJiODc5MzYqDAiYxM3VBhCFhuHcAw==
