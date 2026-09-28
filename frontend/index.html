@@ -12,43 +12,59 @@
   <div class="app">
     <header class="header">
       <div class="avatar">帳</div>
-      <div>
+      <div class="brand">
         <h1>口頭帳</h1>
-        <p>講一句就記低 · 粵英夾雜都得</p>
+        <p>講一句就記低 · 粵英夾雜都得 · 電腦同手機共用</p>
       </div>
-      <span class="badge" id="modelBadge">NER: 規則引擎</span>
+      <div class="header-meta">
+        <span class="badge" id="modelBadge">NER: 規則引擎</span>
+        <span class="device-hint">寬版工作台</span>
+      </div>
     </header>
     <nav class="tabs">
       <button class="active" data-tab="chat">傾偉</button>
       <button data-tab="book">帳本</button>
       <button data-tab="budget">預算</button>
     </nav>
-    <section class="panel active" id="chat">
-      <div class="chat" id="chatLog"></div>
-      <div class="chips" id="chips">
-        <button data-q="頭先喇老麥食咗個餐界咗四十幾蚊">老麥四十幾蚊</button>
-        <button data-q="搭黨鐵去中環嘟咗八蚊五">港鐵八蚊五</button>
-        <button data-q="呢個月飲食係咪超支？">飲食超支未？</button>
-        <button data-q="我啲對話會唔會上雲？">私隱</button>
-      </div>
-      <form class="composer" id="composer">
-        <button type="button" class="ghost" id="micBtn" title="語音">🎤</button>
-        <input id="input" autocomplete="off" placeholder="例如：用 PayMe 界咗廿四蚊食茶記" />
-        <button type="submit" title="傳送">➤</button>
-      </form>
-    </section>
-    <section class="panel" id="book">
-      <div class="list" id="bookList"></div>
-    </section>
-    <section class="panel" id="budget">
-      <div class="budget-box">
-        <h2 style="margin:0 0 8px;font-size:18px;">本月預算</h2>
-        <label class="hint">每月上限（HKD）</label>
-        <input id="budgetInput" type="number" min="0" step="100" value="5000" style="width:100%;margin:8px 0 12px;padding:10px;border:1px solid #e2ddd4;border-radius:10px;font:inherit;" />
-        <div class="bar" id="budgetBar"><span style="width:0%"></span></div>
-        <p class="hint" id="budgetText">未有交易</p>
-      </div>
-    </section>
+    <div class="workspace">
+      <section class="panel active" id="chat">
+        <div class="pane-head desktop-only">
+          <h2>傾偉入帳</h2>
+          <p>用文字或語音講開支，核對確認卡之後入帳。</p>
+        </div>
+        <div class="chat" id="chatLog"></div>
+        <div class="chips" id="chips">
+          <button data-q="頭先喇老麥食咗個餐界咗四十幾蚊">老麥四十幾蚊</button>
+          <button data-q="搭黨鐵去中環嘟咗八蚊五">港鐵八蚊五</button>
+          <button data-q="呢個月飲食係咪超支？">飲食超支未？</button>
+          <button data-q="我啲對話會唔會上雲？">私隱</button>
+        </div>
+        <form class="composer" id="composer">
+          <button type="button" class="ghost" id="micBtn" title="語音">🎤</button>
+          <input id="input" autocomplete="off" placeholder="例如：用 PayMe 界咗廿四蚊食茶記" />
+          <button type="submit" title="傳送">➤</button>
+        </form>
+      </section>
+      <aside class="side">
+        <section class="panel" id="budget">
+          <div class="budget-box">
+            <h2>本月預算</h2>
+            <label class="hint" for="budgetInput">每月上限（HKD）</label>
+            <input id="budgetInput" type="number" min="0" step="100" value="5000" />
+            <div class="bar" id="budgetBar"><span style="width:0%"></span></div>
+            <p class="hint" id="budgetText">未有交易</p>
+            <div class="stats" id="budgetStats"></div>
+          </div>
+        </section>
+        <section class="panel" id="book">
+          <div class="pane-head">
+            <h2>帳本</h2>
+            <p id="bookCount">未有記錄</p>
+          </div>
+          <div class="list" id="bookList"></div>
+        </section>
+      </aside>
+    </div>
   </div>
   <script src="./app.js"></script>
 </body>
