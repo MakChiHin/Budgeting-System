@@ -1,20 +1,27 @@
-
 [
   {
-    "raw_text": "頭先喺老麥食咗個餐畀咗四十幾蚊",
+    "raw_text": "頭先喇老麥食咗個餐界咗四十幾蚊",
     "amount": 45.0,
     "currency": "HKD",
     "merchant": "McDonald's (老麥)",
     "category": "Food & Dining",
-    "payment_method": "Cash"
+    "payment_method": "Cash",
+    "original_amount": 45.0,
+    "discount_amount": 0.0,
+    "transaction_type": "purchase",
+    "amount_certainty": "approximate"
   },
   {
-    "raw_text": "用 PayMe 過咗一百五十蚊畀阿明夾錢",
+    "raw_text": "用 PayMe 過咗一百五十蚊界阿明夾錢",
     "amount": 150.0,
     "currency": "HKD",
     "merchant": null,
     "category": "Entertainment",
-    "payment_method": "PayMe"
+    "payment_method": "PayMe",
+    "original_amount": 150.0,
+    "discount_amount": 0.0,
+    "transaction_type": "transfer",
+    "amount_certainty": "exact"
   },
   {
     "raw_text": "搭黨鐵去中環嘟咗八蚊五",
@@ -22,6 +29,10 @@
     "currency": "HKD",
     "merchant": "MTR",
     "category": "Transport",
-    "payment_method": "Octopus"
+    "payment_method": "Octopus",
+    "original_amount": 8.5,
+    "discount_amount": 0.0,
+    "transaction_type": "purchase",
+    "amount_certainty": "exact"
   }
 ]

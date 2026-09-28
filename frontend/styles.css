@@ -1,0 +1,115 @@
+:root {
+  --teal: #2a9d8f;
+  --teal-dark: #1d7a70;
+  --navy: #1b3a4b;
+  --cream: #f4f1ea;
+  --card: #ffffff;
+  --user: #dceee9;
+  --bot: #ffffff;
+  --line: #e2ddd4;
+  --warn: #e76f51;
+  --ink: #243038;
+  --muted: #6b7c83;
+  --shadow: 0 8px 24px rgba(27, 58, 75, 0.08);
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; height: 100%;
+  font-family: "Noto Sans TC", "PingFang HK", "Microsoft JhengHei", sans-serif;
+  background: #d9e3df; color: var(--ink);
+}
+.app {
+  max-width: 430px; height: 100%; margin: 0 auto;
+  background: var(--cream); display: flex; flex-direction: column;
+  box-shadow: var(--shadow);
+}
+.header {
+  background: var(--navy); color: #fff; padding: 14px 16px 12px;
+  display: flex; align-items: center; gap: 12px;
+}
+.avatar {
+  width: 42px; height: 42px; border-radius: 50%; background: var(--teal);
+  display: grid; place-items: center; font-weight: 700; font-size: 15px;
+}
+.header h1 { margin: 0; font-size: 18px; }
+.header p { margin: 2px 0 0; font-size: 12px; color: #c9d6d4; }
+.badge {
+  margin-left: auto; font-size: 10px; background: #2f5566;
+  padding: 4px 8px; border-radius: 999px; color: #d7efe9;
+}
+.tabs {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  background: #fff; border-bottom: 1px solid var(--line);
+}
+.tabs button {
+  border: 0; background: transparent; padding: 10px 0 8px;
+  font: inherit; color: var(--muted); cursor: pointer;
+}
+.tabs button.active {
+  color: var(--teal-dark); font-weight: 700;
+  box-shadow: inset 0 -3px 0 var(--teal);
+}
+.panel { display: none; flex: 1; min-height: 0; flex-direction: column; }
+.panel.active { display: flex; }
+.chat {
+  flex: 1; overflow-y: auto; padding: 14px 12px 8px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.msg {
+  max-width: 86%; padding: 10px 12px; border-radius: 16px;
+  line-height: 1.45; font-size: 15px; white-space: pre-wrap;
+}
+.msg.bot { align-self: flex-start; background: var(--bot); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+.msg.user { align-self: flex-end; background: var(--user); border-bottom-right-radius: 4px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 12px 8px; }
+.chips button {
+  border: 1px solid var(--line); background: #fff; border-radius: 999px;
+  padding: 6px 10px; font: inherit; font-size: 12px; cursor: pointer; color: var(--navy);
+}
+.composer {
+  display: flex; gap: 8px; padding: 10px; background: #fff;
+  border-top: 1px solid var(--line);
+}
+.composer input {
+  flex: 1; border: 1px solid var(--line); border-radius: 22px;
+  padding: 10px 14px; font: inherit; font-size: 15px; outline: none;
+}
+.composer button {
+  width: 42px; height: 42px; border: 0; border-radius: 50%;
+  background: var(--teal); color: #fff; cursor: pointer; font-size: 16px;
+}
+.composer button.ghost { background: #d7e8e4; color: var(--navy); }
+.card {
+  align-self: stretch; background: #fff; border: 1px solid var(--line);
+  border-radius: 14px; padding: 12px; box-shadow: var(--shadow);
+}
+.card h3 { margin: 0 0 8px; font-size: 14px; color: var(--navy); }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.grid label { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--muted); }
+.grid input, .grid select {
+  border: 1px solid var(--line); border-radius: 8px; padding: 7px 8px;
+  font: inherit; font-size: 13px;
+}
+.card .actions { display: flex; gap: 8px; margin-top: 10px; }
+.card .actions button {
+  flex: 1; border: 0; border-radius: 10px; padding: 9px; font: inherit; cursor: pointer;
+}
+.ok { background: var(--teal); color: #fff; }
+.no { background: #eee6dc; color: var(--navy); }
+.list { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.row {
+  background: #fff; border-radius: 12px; padding: 10px 12px;
+  display: flex; justify-content: space-between; gap: 8px; border: 1px solid var(--line);
+}
+.row b { font-size: 16px; }
+.row small { color: var(--muted); display: block; margin-top: 2px; }
+.amt { font-weight: 700; color: var(--navy); white-space: nowrap; }
+.budget-box { padding: 16px; }
+.bar { height: 14px; background: #e4ece9; border-radius: 999px; overflow: hidden; margin: 10px 0 6px; }
+.bar > span { display: block; height: 100%; background: var(--teal); }
+.bar.over > span { background: var(--warn); }
+.hint { color: var(--muted); font-size: 13px; }
+@media (min-width: 800px) {
+  body { padding: 18px 0; }
+  .app { height: calc(100% - 36px); border-radius: 18px; overflow: hidden; }
+}
