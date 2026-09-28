@@ -1,0 +1,9 @@
+{
+  "note": "FYP target is a self-trained on-device SLM. DeepSeek is a TEMPORARY chat placeholder only.",
+  "ner_target_model": "Qwen-2.5-1.5B-Instruct",
+  "ner_target_alt": "Qwen-2.5-3B-Instruct",
+  "ner_runtime_now": "rule_based_v0",
+  "chat_placeholder": "deepseek-chat",
+  "chat_api_base": "https://api.deepseek.com/v1",
+  "on_device_plan": "After QLoRA, export GGUF Q4 and replace /api/extract."
+}

@@ -1,0 +1,9 @@
+{
+  "name": "口頭帳 Budgeting System",
+  "short_name": "口頭帳",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f4f1ea",
+  "theme_color": "#1b3a4b",
+  "lang": "zh-HK"
+}
