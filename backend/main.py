@@ -123,6 +123,16 @@ async def _deepseek_reply(text, history):
         r.raise_for_status()
         return r.json()["choices"][0]["message"]["content"]
 
+# ---------- Supabase routes (Chan Yin Hei) ----------
+from routers import users as sb_users, transactions as sb_txns, lookup as sb_lookup
+app.include_router(sb_users.router)
+app.include_router(sb_txns.router)
+app.include_router(sb_lookup.router)
+
 frontend_dir = ROOT / "frontend"
 if frontend_dir.exists():
     app.mount("/", StaticFiles(directory=str(frontend_dir), html=True), name="frontend")
+
+from routers import users, transactions
+app.include_router(users.router)
+app.include_router(transactions.router)
