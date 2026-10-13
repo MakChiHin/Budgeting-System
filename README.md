@@ -9,7 +9,7 @@ Repo：https://github.com/MakChiHin/Budgeting-System
 
 ## 組員點樣開嚟測試（Windows）
 
-1. 安裝 [Python 3.11+](https://www.python.org/downloads/)（安裝時剜「Add Python to PATH」）
+1. 安裝 [Python 3.11+](https://www.python.org/downloads/)（安裝時勾「Add Python to PATH」）
 2. 開 **PowerShell**：
 
 ```powershell
@@ -25,7 +25,7 @@ python -m uvicorn main:app --reload --port 8000
 
 http://127.0.0.1:8000/
 
-4. 如果畫面仲係舊版：Chrome 撴 **Ctrl+F5**。仍然舊就 F12 → Application → Service Workers → Unregister，再 Refresh。
+4. 如果畫面仲係舊版：Chrome 撳 **Ctrl+F5**。仍然舊就 F12 → Application → Service Workers → Unregister，再 Refresh。
 
 **唔好淨係打 `uvicorn`。** Windows 多數入唔到 PATH，一定要用：
 
@@ -50,10 +50,11 @@ Mac / Linux 同樣用 `python -m uvicorn ...`。
 
 ## 而家做到哪
 
-- 同一個網站：電腦左右分欄（傾偉 + 預算／帳本），手機三個 tab
-- 傾偉入帳 + 確認卡（amount / currency / merchant / category / payment_method + original_amount / discount / type / certainty）
+- 同一個網站：電腦左右分欄（對話 + 歷史），手機三個 tab
+- 對話入帳 + 確認卡（金額 / 貨幣 / 商戶 / 類別 / 支付 + 轉賬對象 / 用途 / 渠道）
 - 每月預算同分類統計
-- Chrome 粵語語音（`zh-HK`）
+- 歷史記錄可刪除、可匯出 CSV
+- Chrome 粵語語音（`zh-HK`）+ 後端 SenseVoice 可選
 - NER：規則引擎 `rule_based_v0`（等 Qwen-2.5 fine-tune 完再換）
 - Chat：有 key 用 deepseek-chat 暫時頂；冇 key 用本地回覆
 

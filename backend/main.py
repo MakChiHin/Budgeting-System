@@ -19,6 +19,7 @@ CFG_FILE = Path(__file__).resolve().parent / "model_config.json"
 app = FastAPI(title="Kotau Budgeting System")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
+
 def _load_txns():
     if not TXN_FILE.exists():
         return []
@@ -27,20 +28,25 @@ def _load_txns():
     except json.JSONDecodeError:
         return []
 
+
 def _save_txns(rows):
     TXN_FILE.write_text(json.dumps(rows, ensure_ascii=False, indent=2), encoding="utf-8")
+
 
 def _config():
     if CFG_FILE.exists():
         return json.loads(CFG_FILE.read_text(encoding="utf-8"))
     return {}
 
+
 class TextIn(BaseModel):
     text: str
+
 
 class ChatIn(BaseModel):
     text: str
     history: list[dict] = Field(default_factory=list)
+
 
 class TxnIn(BaseModel):
     raw_text: str | None = None
@@ -53,6 +59,10 @@ class TxnIn(BaseModel):
     discount_amount: float | None = 0
     transaction_type: str = "purchase"
     amount_certainty: str = "exact"
+    counterparty: str | None = None
+    purpose: str | None = None
+    channel: str | None = None
+
 
 def _sensevoice_ready() -> bool:
     try:
@@ -60,6 +70,7 @@ def _sensevoice_ready() -> bool:
         return True
     except ImportError:
         return False
+
 
 @app.get("/api/health")
 def health():
@@ -74,9 +85,11 @@ def health():
         "stt": "sensevoice" if _sensevoice_ready() else "browser_fallback",
     }
 
+
 @app.get("/api/model")
 def model_info():
     return _config()
+
 
 @app.post("/api/transcribe")
 async def api_transcribe(file: UploadFile = File(...)):
@@ -87,6 +100,7 @@ async def api_transcribe(file: UploadFile = File(...)):
     if text is None:
         return {"ok": False, "error": "sensevoice_unavailable", "engine": "none"}
     return {"ok": True, "text": text, "engine": engine}
+
 
 def _transcribe(data: bytes, filename: str):
     if not _sensevoice_ready():
@@ -115,25 +129,31 @@ def _transcribe(data: bytes, filename: str):
         except OSError:
             pass
 
+
 @app.post("/api/extract")
 def api_extract(body: TextIn):
     return extract(body.text)
 
+
 @app.post("/api/chat")
 async def api_chat(body: ChatIn):
     parsed = extract(body.text)
-    looks_like_expense = parsed.get("amount") is not None or any(w in body.text for w in ("\u868a", "\u754c", "\u98df", "\u642d", "PayMe", "FPS", "\u516b\u9054\u901a"))
+    looks_like_expense = parsed.get("amount") is not None or any(
+        w in body.text for w in ("蚊", "畀", "食", "搭", "PayMe", "FPS", "八達通")
+    )
     reply = _local_reply(body.text, parsed, looks_like_expense)
     if os.getenv("DEEPSEEK_API_KEY") and not looks_like_expense:
         try:
             reply = await _deepseek_reply(body.text, body.history)
         except Exception as exc:
-            reply = _local_reply(body.text, parsed, looks_like_expense) + "\n(DeepSeek error: " + exc.__class__.__name__ + ")"
+            reply = _local_reply(body.text, parsed, looks_like_expense) + f"\n(DeepSeek error: {exc.__class__.__name__})"
     return {"reply": reply, "extraction": parsed if looks_like_expense else None}
+
 
 @app.get("/api/transactions")
 def list_txns():
     return _load_txns()
+
 
 @app.post("/api/transactions")
 def add_txn(body: TxnIn):
@@ -145,19 +165,22 @@ def add_txn(body: TxnIn):
     _save_txns(rows)
     return item
 
+
 @app.delete("/api/transactions/{txn_id}")
 def del_txn(txn_id: str):
     _save_txns([r for r in _load_txns() if r.get("id") != txn_id])
     return {"ok": True}
 
+
 def _local_reply(text, parsed, expense):
     if expense and parsed.get("amount") is not None:
-        mer = parsed.get("merchant") or "unknown merchant"
-        pay = parsed.get("payment_method") or "unknown pay"
-        return f"Guess: {parsed['currency']} {parsed['amount']} / {mer} / {parsed['category']} / {pay}. Confirm the card to save."
+        mer = parsed.get("merchant") or parsed.get("channel") or "未命名"
+        pay = parsed.get("payment_method") or "未設定支付"
+        return f"估：{parsed['currency']} {parsed['amount']} / {mer} / {parsed['category']} / {pay}。核對確認卡再入帳。"
     if expense:
-        return "Looks like an expense, but no amount found."
-    return "Kotau assistant. Say an expense like 'old mak 40 something dollars', or ask about budget/privacy. NER is rule-based for now. Final FYP model is self-trained Qwen-2.5-1.5B."
+        return "呢句似記帳，但未見到金額。"
+    return "可以講開支，或者去「圖表」睇本月分佈。喜好喺右上角齒輪。"
+
 
 async def _deepseek_reply(text, history):
     import httpx
@@ -170,20 +193,25 @@ async def _deepseek_reply(text, history):
         messages.append({"role": role, "content": str(h.get("content", ""))[:500]})
     messages.append({"role": "user", "content": text})
     async with httpx.AsyncClient(timeout=30) as client:
-        r = await client.post("https://api.deepseek.com/v1/chat/completions", headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"}, json={"model": "deepseek-chat", "messages": messages, "temperature": 0.4})
+        r = await client.post(
+            "https://api.deepseek.com/v1/chat/completions",
+            headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+            json={"model": "deepseek-chat", "messages": messages, "temperature": 0.4},
+        )
         r.raise_for_status()
         return r.json()["choices"][0]["message"]["content"]
 
-# ---------- Supabase routes (Chan Yin Hei) ----------
-from routers import users as sb_users, transactions as sb_txns, lookup as sb_lookup
-app.include_router(sb_users.router)
-app.include_router(sb_txns.router)
-app.include_router(sb_lookup.router)
+
+# ---------- Supabase routes (Chan Yin Hei) — optional ----------
+try:
+    from routers import users as sb_users, transactions as sb_txns, lookup as sb_lookup
+    app.include_router(sb_users.router)
+    app.include_router(sb_txns.router)
+    app.include_router(sb_lookup.router)
+except Exception:
+    pass  # no supabase key / package → local mode only
+
 
 frontend_dir = ROOT / "frontend"
 if frontend_dir.exists():
     app.mount("/", StaticFiles(directory=str(frontend_dir), html=True), name="frontend")
-
-from routers import users, transactions
-app.include_router(users.router)
-app.include_router(transactions.router)
