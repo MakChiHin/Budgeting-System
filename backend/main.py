@@ -3,7 +3,7 @@ import json, os, uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -54,15 +54,66 @@ class TxnIn(BaseModel):
     transaction_type: str = "purchase"
     amount_certainty: str = "exact"
 
+def _sensevoice_ready() -> bool:
+    try:
+        import funasr  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
 @app.get("/api/health")
 def health():
     cfg = _config()
     key = bool(os.getenv("DEEPSEEK_API_KEY"))
-    return {"ok": True, "ner": cfg.get("ner_runtime_now", "rule_based_v0"), "ner_target": cfg.get("ner_target_model"), "chat": "deepseek-chat" if key else "local_fallback", "deepseek_key_present": key}
+    return {
+        "ok": True,
+        "ner": cfg.get("ner_runtime_now", "rule_based_v0"),
+        "ner_target": cfg.get("ner_target_model"),
+        "chat": "deepseek-chat" if key else "local_fallback",
+        "deepseek_key_present": key,
+        "stt": "sensevoice" if _sensevoice_ready() else "browser_fallback",
+    }
 
 @app.get("/api/model")
 def model_info():
     return _config()
+
+@app.post("/api/transcribe")
+async def api_transcribe(file: UploadFile = File(...)):
+    data = await file.read()
+    if not data:
+        return {"ok": False, "error": "empty audio"}
+    text, engine = _transcribe(data, file.filename or "audio.webm")
+    if text is None:
+        return {"ok": False, "error": "sensevoice_unavailable", "engine": "none"}
+    return {"ok": True, "text": text, "engine": engine}
+
+def _transcribe(data: bytes, filename: str):
+    if not _sensevoice_ready():
+        return None, "none"
+    import tempfile
+    suffix = Path(filename).suffix or ".webm"
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+        tmp.write(data)
+        path = tmp.name
+    try:
+        from funasr import AutoModel
+        model = AutoModel(model="iic/SenseVoiceSmall", disable_update=True)
+        res = model.generate(input=path, cache={}, language="yue", use_itn=True)
+        raw = (res[0].get("text") or "").strip()
+        try:
+            from funasr.utils.postprocess_utils import rich_transcription_postprocess
+            raw = rich_transcription_postprocess(raw)
+        except Exception:
+            pass
+        return raw, "sensevoice"
+    except Exception:
+        return None, "none"
+    finally:
+        try:
+            os.remove(path)
+        except OSError:
+            pass
 
 @app.post("/api/extract")
 def api_extract(body: TextIn):
