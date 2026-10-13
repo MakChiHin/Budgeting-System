@@ -2,15 +2,18 @@ from __future__ import annotations
 import re
 from typing import Any
 
-CN_NUM = {"\u96f6":0,"\u4e00":1,"\u4e8c":2,"\u5169":2,"\u4e24":2,"\u4e09":3,"\u56db":4,"\u4e94":5,"\u516d":6,"\u4e03":7,"\u516b":8,"\u4e5d":9,"\u5341":10}
+CN_NUM = {"\u96f6": 0, "\u4e00": 1, "\u4e8c": 2, "\u5169": 2, "\u4e24": 2, "\u4e09": 3, "\u56db": 4, "\u4e94": 5, "\u516d": 6, "\u4e03": 7, "\u516b": 8, "\u4e5d": 9, "\u5341": 10}
 MERCHANTS = [
     (r"\u8001\u9ea5|\u9ea5\u7576\u52de|McDonald", "McDonald's (\u8001\u9ea5)", "Food & Dining"),
     (r"\u80af\u5fb7\u57fa|KFC", "KFC", "Food & Dining"),
     (r"Starbucks?|\u661f\u5df4\u514b", "Starbucks", "Food & Dining"),
     (r"\u8336\u8a18|\u8336\u9910\u5ef3", "\u8336\u9910\u5ef3", "Food & Dining"),
-    (r"\u9ee8\u9435|\u6e2f\u9435|MTR", "MTR", "Transport"),
+    (r"\u9ee8\u9435|\u6e2f\u9435|MTR", "\u6e2f\u9435", "Transport"),
     (r"\u7d05\s*van|\u7d05Van", "\u7d05Van", "Transport"),
     (r"\u7da0\s*van|\u7da0Van", "\u7da0Van", "Transport"),
+    (r"\u5df4\u58eb|\u4e5d\u5df4|\u57ce\u5df4", "\u5df4\u58eb", "Transport"),
+    (r"\u5c0f\u5df4", "\u5c0f\u5df4", "Transport"),
+    (r"\u7684\u58eb|Taxi", "\u7684\u58eb", "Transport"),
 ]
 PAYMENTS = [
     (r"PayMe|payme", "PayMe"),
@@ -20,6 +23,7 @@ PAYMENTS = [
     (r"\u4fe1\u7528\u5361|Visa|Master", "Credit Card"),
     (r"\u73fe\u91d1|\u754c\u5497", "Cash"),
 ]
+
 
 def _cn_to_int(s: str):
     s = s.strip()
@@ -42,6 +46,7 @@ def _cn_to_int(s: str):
     if s in CN_NUM:
         return float(total + CN_NUM[s])
     return float(total) if total else None
+
 
 def _parse_amount(text: str):
     if re.search(r"\u5e7e\u591a|\u5514\u8a18\u5f97|\u672a\u77e5", text):
@@ -74,33 +79,48 @@ def _parse_amount(text: str):
             return base, "exact"
     return None, "unknown"
 
+
 def extract(text: str) -> dict[str, Any]:
     text = (text or "").strip()
     amount, certainty = _parse_amount(text)
     merchant = None
     category = "Others"
+    channel = None
     for pat, name, cat in MERCHANTS:
         if re.search(pat, text, re.I):
             merchant = name
             category = cat
+            if cat == "Transport":
+                channel = name
             break
     payment = None
     for pat, name in PAYMENTS:
         if re.search(pat, text, re.I):
             payment = name
             break
-    if payment is None and re.search(r"\u754c\u5497|\u73fe\u91d1", text):
-        payment = "Cash"
     if category == "Others":
         if re.search(r"\u98df|\u9910|\u98f2|\u8336|\u98ef", text):
             category = "Food & Dining"
         elif re.search(r"\u642d|\u8eca|van|\u7684\u58eb", text, re.I):
             category = "Transport"
+    if re.search(r"\u642d\u8eca", text):
+        category = "Transport"
     txn_type = "purchase"
     if re.search(r"\u9000", text):
         txn_type = "refund"
     elif re.search(r"\u8f49|\u904e\u5497|\u593e\u9322", text):
         txn_type = "transfer"
+    counterparty = None
+    m = re.search(r"(?:\u754c|\u6bd4|\u904e[\u5497\u5de6]?\u6578?\u754c)\s*([^\s\uff0c\u3002]{1,8})", text)
+    if m and not re.search(r"\u5497|\u5de6|\u868a", m.group(1)):
+        counterparty = re.sub(r"\u593e\u9322|\u98df\u98ef", "", m.group(1))
+    purpose = None
+    if re.search(r"\u593e\u9322", text):
+        purpose = "\u593e\u9322"
+    elif re.search(r"\u98df", text):
+        purpose = "\u98df\u98ef"
+    elif re.search(r"\u642d", text):
+        purpose = f"\u642d{channel}" if channel else None
     return {
         "raw_text": text,
         "amount": amount,
@@ -112,5 +132,8 @@ def extract(text: str) -> dict[str, Any]:
         "discount_amount": 0.0,
         "transaction_type": txn_type,
         "amount_certainty": certainty,
+        "counterparty": counterparty,
+        "purpose": purpose,
+        "channel": channel,
         "extractor": "rule_based_v0",
     }
