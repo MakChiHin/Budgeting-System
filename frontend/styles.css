@@ -184,12 +184,14 @@ html, body {
 .hbar .track > span { display: block; height: 100%; background: var(--teal); }
 .hbar b { font-size: 12px; white-space: nowrap; }
 .dock {
-  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  display: flex;
   background: #fff; border-top: 1px solid var(--line);
   padding-bottom: env(safe-area-inset-bottom);
 }
 .dock button {
+  flex: 1;
   border: 0; background: transparent; padding: 12px 0 10px; color: var(--muted);
+  text-align: center;
 }
 .dock button.active { color: var(--teal-dark); font-weight: 700; box-shadow: inset 0 3px 0 var(--teal); }
 .sheet-back {
@@ -209,8 +211,11 @@ html, body {
 @media (min-width: 720px) {
   body.dual-pane .workspace { flex-direction: row; }
   body.dual-pane .panel#chat,
-  body.dual-pane .panel#history { display: flex; }
+  body.dual-pane .panel#history { display: flex !important; }
   body.dual-pane .panel#chat { flex: 1.1; border-right: 1px solid var(--line); }
   body.dual-pane .panel#history { flex: 0.9; }
-  body.dual-pane .panel#chart { display: none; }
+  body.dual-pane .panel#chart { display: none !important; }
+  body.dual-pane.desktop-chart .panel#chat,
+  body.dual-pane.desktop-chart .panel#history { display: none !important; }
+  body.dual-pane.desktop-chart .panel#chart { display: flex !important; flex: 1; }
 }
