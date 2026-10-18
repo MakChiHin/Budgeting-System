@@ -6,7 +6,7 @@
   <title>口頭帳 — 理財助手</title>
   <meta name="theme-color" content="#1b3a4b" />
   <link rel="manifest" href="./manifest.json" />
-  <link rel="stylesheet" href="./styles.css?v=18" />
+  <link rel="stylesheet" href="./styles.css?v=19" />
 </head>
 <body>
   <div class="app">
@@ -113,10 +113,19 @@
         <h2>修改記錄</h2>
         <div class="grid" id="editSheet">
           <label>金額 <input name="amount" type="number" step="0.1"></label>
-          <label>貨幣 <input name="currency"></label>
-          <label>商戶／公司 <input name="merchant"></label>
+          <label>貨幣 <input name="currency" list="currencies"></label>
+          <datalist id="currencies">
+            <option value="HKD"><option value="USD"><option value="CNY"><option value="JPY"><option value="EUR">
+          </datalist>
+          <label>商戶／公司 <input name="merchant" list="merchants"></label>
+          <datalist id="merchants">
+            <option value="McDonald's (老麥)"><option value="茶餐廳"><option value="港鐵"><option value="巴士"><option value="超市"><option value="便利店"><option value="餐廳">
+          </datalist>
           <label>畀邊個／AA對象 <input name="counterparty"></label>
-          <label>做咩用 <input name="purpose"></label>
+          <label>做咩用 <input name="purpose" list="purposes"></label>
+          <datalist id="purposes">
+            <option value="食飯"><option value="搭車"><option value="夾錢"><option value="購物"><option value="娛樂"><option value="家用"><option value="租金"><option value="水電">
+          </datalist>
           <label>交通／渠道
             <select name="channel">
               <option>港鐵</option>
@@ -142,10 +151,10 @@
           </label>
           <label>類型
             <select name="transaction_type">
-              <option>purchase</option>
-              <option>refund</option>
-              <option>transfer</option>
-              <option>split</option>
+              <option value="purchase">購買</option>
+              <option value="refund">退款</option>
+              <option value="transfer">轉帳</option>
+              <option value="split">拆帳</option>
             </select>
           </label>
           <label>AA 拆帳（邊個欠你） <input name="split_with" placeholder="阿明 30，小明 25 或 a20"></label>
@@ -157,6 +166,6 @@
       </form>
     </div>
   </div>
-  <script src="./app.js?v=18"></script>
+  <script src="./app.js?v=19"></script>
 </body>
 </html>
