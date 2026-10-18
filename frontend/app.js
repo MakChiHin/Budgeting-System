@@ -280,10 +280,11 @@ function relativeDate(iso) {
   var d = new Date(iso);
   var now = new Date();
   var diff = Math.floor((now - d) / 86400000);
-  if (diff === 0) return "今日";
-  if (diff === 1) return "昨日";
-  if (diff < 7) return diff + " 日前";
-  return (d.getMonth()+1) + "/" + d.getDate();
+  var dateStr = (d.getMonth()+1) + "/" + d.getDate();
+  if (diff === 0) return "今日 " + dateStr;
+  if (diff === 1) return "昨日 " + dateStr;
+  if (diff < 7) return diff + " 日前 " + dateStr;
+  return dateStr;
 }
 
 function titleOf(t) {
