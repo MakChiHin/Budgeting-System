@@ -29,6 +29,7 @@ html, body {
   flex-direction: column;
   box-shadow: var(--shadow);
   position: relative;
+  overflow: hidden;
 }
 .header {
   background: var(--navy);
@@ -125,6 +126,7 @@ html, body {
 .grid input, .grid select, .sheet input, .sheet select {
   border: 1px solid var(--line); border-radius: 8px; padding: 7px 8px;
   font: inherit; font-size: 13px; color: var(--ink);
+  width: 100%;
 }
 .actions { display: flex; gap: 8px; margin-top: 10px; }
 .actions button { flex: 1; border: 0; border-radius: 10px; padding: 9px; }
@@ -197,15 +199,28 @@ html, body {
 .sheet-back {
   position: absolute; inset: 0; background: rgba(27, 58, 75, 0.35);
   display: flex; align-items: flex-end; z-index: 5;
+  overflow: auto;
 }
 .sheet-back[hidden] { display: none; }
-.sheet { width: 100%; border-radius: 16px 16px 0 0; padding: 16px; }
+.sheet {
+  width: 100%;
+  max-width: 100%;
+  border-radius: 16px 16px 0 0;
+  padding: 16px;
+  max-height: 90%;
+  overflow-y: auto;
+}
 .sheet label { margin-top: 10px; font-size: 13px; }
 @media (min-width: 720px) {
   body { padding: 12px; }
   .app { max-width: 1100px; height: calc(100% - 24px); border-radius: 18px; overflow: hidden; }
   .grid { grid-template-columns: 1fr 1fr 1fr; }
-  .sheet { max-width: 460px; margin: auto; border-radius: 16px; }
+  .sheet {
+    max-width: 520px;
+    margin: auto;
+    border-radius: 16px;
+    max-height: 80%;
+  }
   .sheet-back { align-items: center; justify-content: center; }
 }
 @media (min-width: 720px) {
