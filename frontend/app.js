@@ -179,7 +179,7 @@ function addCard(ext) {
     lastPrefs = { payment_method: data.payment_method, category: data.category };
     saveLocal("kotau_last_prefs", lastPrefs);
     wrap.remove();
-    addMsg("bot", "入咗帳。去下面「歷史」睇畀咗邊個、做咩用。");
+    addMsg("bot", "已入帳 HKD " + (data.amount || 0) + "（" + (CAT_LABEL[data.category] || data.category || "未分類") + "）。");
   };
 }
 
