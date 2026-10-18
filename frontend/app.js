@@ -583,6 +583,16 @@ async function send(text) {
   text = (text || "").trim();
   if (!text) return;
   addMsg("user", text);
+  if (/超支|預算|幾多錢|用咗幾多/.test(text)) {
+    var month = monthTxns(selectedMonth);
+    var spent = month.reduce(function(s, t) { return s + Number(t.amount || 0); }, 0);
+    var over = spent > budget;
+    var msg = over
+      ? ("已超支。已用 HKD " + spent.toFixed(0) + "，預算 " + budget + "，超 " + (spent - budget).toFixed(0) + "。")
+      : ("未超支。已用 HKD " + spent.toFixed(0) + " / " + budget + "。");
+    addMsg("bot", msg);
+    return;
+  }
   input.value = "";
   chatHistory.push({ role: "user", content: text });
   var payload = null;
