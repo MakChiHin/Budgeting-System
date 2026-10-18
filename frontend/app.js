@@ -63,6 +63,7 @@ let chatHistory = [];
 let searchTerm = "";
 let selectedMonth = "";
 let lastDeleted = null;
+let trash = loadLocal("kotau_trash", []);
 let lastPrefs = loadLocal("kotau_last_prefs", {});
 
 function addMsg(role, text) {
@@ -228,35 +229,50 @@ async function deleteTxn(id) {
   if (!confirm("刪除呢筆記錄？")) return;
   var idx = txns.findIndex(function(t) { return t.id === id; });
   if (idx === -1) return;
-  lastDeleted = txns[idx];
+  var deleted = txns[idx];
+  deleted.deleted_at = new Date().toISOString();
+  trash.unshift(deleted);
+  saveLocal("kotau_trash", trash);
   txns = txns.filter(function(t) { return t.id !== id; });
   saveLocal("kotau_txns", txns);
   renderHistory();
   renderChart();
-  addMsg("bot", "已刪除。5 秒內可以還原。");
-  setTimeout(function() {
-    var undoBtn = document.querySelector(".undo-btn");
-    if (undoBtn) undoBtn.remove();
-  }, 5000);
-  var undoDiv = document.createElement("div");
-  undoDiv.className = "msg bot";
-  undoDiv.innerHTML = "已刪除。 <button type=\"button\" class=\"undo-btn\" style=\"margin-left:8px;padding:2px 8px;border-radius:4px;border:1px solid #2a9d8f;background:#fff;color:#2a9d8f;cursor:pointer\">還原</button>";
-  undoDiv.querySelector(".undo-btn").onclick = function() {
-    if (lastDeleted) {
-      txns.unshift(lastDeleted);
-      saveLocal("kotau_txns", txns);
-      renderHistory();
-      renderChart();
-      addMsg("bot", "已還原。");
-      lastDeleted = null;
-    }
-    undoDiv.remove();
-  };
-  chatLog.appendChild(undoDiv);
-  chatLog.scrollTop = chatLog.scrollHeight;
+  renderTrash();
   try {
     await fetch(API + "/api/transactions/" + id, { method: "DELETE" });
   } catch (e) { /* offline ok */ }
+}
+
+function restoreFromTrash(id) {
+  var idx = trash.findIndex(function(t) { return t.id === id; });
+  if (idx === -1) return;
+  var restored = trash[idx];
+  delete restored.deleted_at;
+  txns.unshift(restored);
+  trash = trash.filter(function(t) { return t.id !== id; });
+  saveLocal("kotau_txns", txns);
+  saveLocal("kotau_trash", trash);
+  renderHistory();
+  renderChart();
+  renderTrash();
+}
+
+function renderTrash() {
+  var trashEl = $("#trashList");
+  if (!trashEl) return;
+  if (!trash.length) {
+    trashEl.innerHTML = "<p class=\"hint\">垃圾桶係空嘅。</p>";
+    return;
+  }
+  trashEl.innerHTML = trash.map(function(t) {
+    return "<div class=\"row\" style=\"opacity:0.7\">" +
+      "<div><b>" + titleOf(t) + "</b><small>" + (t.amount || "") + " " + (t.currency || "") + "</small></div>" +
+      "<button type=\"button\" class=\"restore\" data-restore=\"" + t.id + "\" title=\"還原\">↩</button>" +
+      "</div>";
+  }).join("");
+  trashEl.querySelectorAll(".restore").forEach(function(b) {
+    b.onclick = function() { restoreFromTrash(b.dataset.restore); };
+  });
 }
 
 function relativeDate(iso) {
@@ -335,7 +351,12 @@ function renderHistory() {
         "<button type=\"button\" class=\"chip-ex\" data-q=\"老麥食咗個餐 45 蚊\">試下：老麥 45 蚊</button>" +
         "</div>";
       bookList.querySelectorAll(".chip-ex").forEach(function(b) {
-        b.onclick = function() { send(b.dataset.q); };
+        b.onclick = function() {
+          var ext = localExtract(b.dataset.q);
+          ext.raw_text = b.dataset.q;
+          addCard(ext);
+          showTab("chat");
+        };
       });
     } else {
       bookList.innerHTML = "<p class=\"hint\">冇符合搜尋嘅記錄。</p>";
