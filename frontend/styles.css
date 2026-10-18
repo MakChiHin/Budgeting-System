@@ -179,18 +179,7 @@ html, body {
 @media (min-width: 720px) {
   body { padding: 12px; }
   .app { max-width: 1100px; height: calc(100% - 24px); border-radius: 18px; overflow: hidden; }
-  .workspace { flex-direction: row; }
-  .panel { display: flex; }
-  .panel#chat { flex: 1.1; border-right: 1px solid var(--line); }
-  .panel#history { flex: 0.9; }
-  .panel#chart { display: none; }
-  /* dock always visible on desktop too */
   .grid { grid-template-columns: 1fr 1fr 1fr; }
   .sheet { max-width: 460px; margin: auto; border-radius: 16px; }
   .sheet-back { align-items: center; justify-content: center; }
-}
-@media (min-width: 720px) {
-  body.desktop-chart .panel#chat,
-  body.desktop-chart .panel#history { display: none; }
-  body.desktop-chart .panel#chart { display: flex; flex: 1; }
 }
