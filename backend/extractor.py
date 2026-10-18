@@ -108,8 +108,9 @@ def extract(text: str) -> dict[str, Any]:
     txn_type = "purchase"
     if re.search(r"\u9000", text):
         txn_type = "refund"
-    elif re.search(r"\u8f49|\u904e\u5497|\u593e\u9322", text):
+    elif re.search(r"\u8f49|\u904e\u5497|\u593e\u9322|\u904e\u6578", text):
         txn_type = "transfer"
+        category = "Transfer"
     counterparty = None
     m = re.search(r"(?:\u754c|\u6bd4|\u904e[\u5497\u5de6]?\u6578?\u754c)\s*([^\s\uff0c\u3002]{1,8})", text)
     if m and not re.search(r"\u5497|\u5de6|\u868a", m.group(1)):
