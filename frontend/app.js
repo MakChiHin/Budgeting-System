@@ -131,19 +131,16 @@ function addCard(ext) {
     (ext.pref_notes && ext.pref_notes.length ? "<p class=\"pref-note\">" + ext.pref_notes.join(" · ") + "，可改完先入。</p>" : "") +
     "<div class=\"grid\">" +
       "<label>金額 <input name=\"amount\" type=\"number\" step=\"0.1\" value=\"" + (ext.amount ?? "") + "\"></label>" +
-      "<label>貨幣 <input name=\"currency\" list=\"currencies\" value=\"" + (ext.currency || "HKD") + "\"></label>" +
-      "<label>商戶／公司 <input name=\"merchant\" list=\"merchants\" value=\"" + (ext.merchant || "") + "\" placeholder=\"例如：老麥\"></label>" +
+      "<label>貨幣 <select name=\"currency\">" + CURRENCIES.map(function(c){return "<option " + (c === (ext.currency || "HKD") ? "selected" : "") + ">" + c + "</option>"}).join("") + "</select></label>" +
+      "<label>商戶／公司 <select name=\"merchant\">" + ["", "McDonald's (老麥)", "茶餐廳", "港鐵", "巴士", "超市", "便利店", "餐廳"].map(function(c){return "<option " + (c === (ext.merchant || "") ? "selected" : "") + ">" + (c || "未設定") + "</option>"}).join("") + "</select></label>" +
       "<label>畀邊個／AA對象 <input name=\"counterparty\" value=\"" + (ext.counterparty || "") + "\" placeholder=\"阿明、小明\"></label>" +
-      "<label>做咩用 <input name=\"purpose\" list=\"purposes\" value=\"" + (ext.purpose || "") + "\" placeholder=\"搭車返工、食飯\"></label>" +
+      "<label>做咩用 <select name=\"purpose\">" + ["", "食飯", "搭車", "夾錢", "購物", "娛樂", "家用", "租金", "水電"].map(function(c){return "<option " + (c === (ext.purpose || "") ? "selected" : "") + ">" + (c || "未設定") + "</option>"}).join("") + "</select></label>" +
       "<label>交通／渠道 <select name=\"channel\">" + channelOpts + "</select></label>" +
       "<label>類別 <select name=\"category\">" + catOpts + "</select></label>" +
       "<label>支付 <select name=\"payment_method\">" + payOpts + "</select></label>" +
       "<label>類型 <select name=\"transaction_type\">" + typeOpts + "</select></label>" +
       "<label>AA 拆帳（邊個欠你） <input name=\"split_with\" value=\"" + (ext.split_with || "") + "\" placeholder=\"阿明 30，小明 25 或 a20\"></label>" +
     "</div>" +
-    "<datalist id=\"currencies\">" + CURRENCIES.map(function(c){return "<option value=\""+c+"\">"}).join("") + "</datalist>" +
-    "<datalist id=\"merchants\">" + MERCHANTS.map(function(c){return "<option value=\""+c+"\">"}).join("") + "</datalist>" +
-    "<datalist id=\"purposes\">" + PURPOSES.map(function(c){return "<option value=\""+c+"\">"}).join("") + "</datalist>" +
     "<div class=\"actions\">" +
       "<button class=\"no\" type=\"button\">唔入</button>" +
       "<button class=\"ok\" type=\"button\">入帳</button>" +
