@@ -87,7 +87,6 @@ function parseSplit(str) {
   if (!str) return [];
   if (Array.isArray(str)) return str;
   return String(str).split(/[,，]/).map(function(s) { return s.trim(); }).filter(Boolean).map(function(part) {
-    // Support both "a 20" and "a20" formats
     var m = part.match(/^(.+?)\s+([\d.]+)$/) || part.match(/^([A-Za-z\u4e00-\u9fff]+)([\d.]+)$/);
     if (m) return { name: m[1].trim(), amount: Number(m[2]), paid: false };
     return { name: part, amount: null, paid: false };
