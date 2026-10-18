@@ -273,7 +273,7 @@ function renderHistory() {
     if (t.merchant) where.push(t.merchant);
     if (t.purpose) where.push(t.purpose);
     var bits = [t.channel, t.payment_method, CAT_LABEL[t.category]].filter(Boolean);
-    var splits = t.splits || parseSplit(t.split_with);
+    var splits = parseSplit(t.split_with) || t.splits || [];
     var splitHtml = "";
     if (splits.length) {
       splitHtml = "<div class=\"splits\">" +
