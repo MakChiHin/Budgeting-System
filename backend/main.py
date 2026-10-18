@@ -171,6 +171,7 @@ def add_txn(body: TxnIn):
         try:
             sb_data = {
                 "id": item["id"],
+                "user_id": "00000000-0000-0000-0000-000000000000",
                 "amount": item.get("amount"),
                 "currency": item.get("currency", "HKD"),
                 "merchant": item.get("merchant"),
