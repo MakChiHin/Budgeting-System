@@ -1,4 +1,4 @@
-const CACHE = "kotau-v21";
+const CACHE = "kotau-v22";
 self.addEventListener("install", (e) => {
   self.skipWaiting();
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(["./", "./index.html", "./styles.css", "./app.js", "./manifest.json"]).catch(() => {})));
