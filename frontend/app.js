@@ -482,7 +482,10 @@ function localExtract(text) {
   else if (/FPS|轉數快/.test(text)) out.payment_method = "FPS";
   else if (/八達通|嘟/.test(text)) out.payment_method = "Octopus";
   else if (/界咗|現金/.test(text)) out.payment_method = "Cash";
-  if (/轉|過咗|夾錢/.test(text)) out.transaction_type = "transfer";
+  if (/轉|過咗|夾錢|過數/.test(text)) {
+    out.transaction_type = "transfer";
+    out.category = "Transfer";
+  }
   if (/AA|拆帳|欠/.test(text)) out.transaction_type = "split";
   var who = text.match(/(?:界|比|過[咗左]?數?界)\s*([^\s，。]{1,8})/);
   if (who && !/咗|左|蚊/.test(who[1])) out.counterparty = who[1].replace(/夾錢|食飯/g, "");
