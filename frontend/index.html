@@ -6,7 +6,7 @@
   <title>口頭帳 — 理財助手</title>
   <meta name="theme-color" content="#1b3a4b" />
   <link rel="manifest" href="./manifest.json" />
-  <link rel="stylesheet" href="./styles.css?v=11" />
+  <link rel="stylesheet" href="./styles.css?v=12" />
 </head>
 <body>
   <div class="app">
@@ -113,8 +113,8 @@
         <div class="grid" id="editSheet">
           <label>金額 <input name="amount" type="number" step="0.1"></label>
           <label>貨幣 <input name="currency"></label>
-          <label>商戶 <input name="merchant"></label>
-          <label>轉界邊個 <input name="counterparty"></label>
+          <label>商戶／公司 <input name="merchant"></label>
+          <label>界邊個／AA對象 <input name="counterparty"></label>
           <label>做咩用 <input name="purpose"></label>
           <label>交通／渠道
             <select name="channel">
@@ -144,8 +144,10 @@
               <option>purchase</option>
               <option>refund</option>
               <option>transfer</option>
+              <option>split</option>
             </select>
           </label>
+          <label>AA 拆帳（邊個欠你） <input name="split_with" placeholder="阿明 30，小明 25"></label>
         </div>
         <div class="actions">
           <button type="button" class="no" id="editClose">取消</button>
@@ -154,6 +156,6 @@
       </form>
     </div>
   </div>
-  <script src="./app.js?v=11"></script>
+  <script src="./app.js?v=12"></script>
 </body>
 </html>
