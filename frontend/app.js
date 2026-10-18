@@ -585,11 +585,16 @@ async function send(text) {
   addMsg("user", text);
   if (/超支|預算|幾多錢|用咗幾多/.test(text)) {
     var month = monthTxns(selectedMonth);
-    var spent = month.reduce(function(s, t) { return s + Number(t.amount || 0); }, 0);
+    var catMap = { "飲食": "Food & Dining", "食": "Food & Dining", "交通": "Transport", "購物": "Shopping" };
+    var targetCat = null;
+    for (var k in catMap) { if (text.indexOf(k) !== -1) { targetCat = catMap[k]; break; } }
+    var filtered = targetCat ? month.filter(function(t) { return t.category === targetCat; }) : month;
+    var spent = filtered.reduce(function(s, t) { return s + Number(t.amount || 0); }, 0);
+    var catName = targetCat ? (CAT_LABEL[targetCat] || targetCat) : "總共";
     var over = spent > budget;
     var msg = over
-      ? ("已超支。已用 HKD " + spent.toFixed(0) + "，預算 " + budget + "，超 " + (spent - budget).toFixed(0) + "。")
-      : ("未超支。已用 HKD " + spent.toFixed(0) + " / " + budget + "。");
+      ? (catName + "已超支。已用 HKD " + spent.toFixed(0) + "，預算 " + budget + "，超 " + (spent - budget).toFixed(0) + "。")
+      : (catName + "未超支。已用 HKD " + spent.toFixed(0) + " / " + budget + "。");
     addMsg("bot", msg);
     return;
   }
@@ -616,10 +621,13 @@ async function send(text) {
       extraction: expense ? ext : null,
     };
   }
-  if (payload.extraction) payload.extraction = applyPrefs(payload.extraction);
-  addMsg("bot", payload.reply);
-  chatHistory.push({ role: "assistant", content: payload.reply });
-  if (payload.extraction) addCard(payload.extraction);
+  if (payload.extraction) {
+    payload.extraction = applyPrefs(payload.extraction);
+    addCard(payload.extraction);
+  } else {
+    addMsg("bot", payload.reply);
+    chatHistory.push({ role: "assistant", content: payload.reply });
+  }
 }
 
 function localExtract(text) {
@@ -661,7 +669,7 @@ function localExtract(text) {
   else if (/FPS|轉數快/.test(text)) out.payment_method = "FPS";
   else if (/八達通|嘟/.test(text)) out.payment_method = "Octopus";
   else if (/界咗|現金/.test(text)) out.payment_method = "Cash";
-  if (/轉|過咗|夾錢|過數/.test(text)) {
+  if (/轉|過咗|夾錢|過數|畀|比/.test(text)) {
     out.transaction_type = "transfer";
     out.category = "Transfer";
   }
