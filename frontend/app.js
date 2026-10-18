@@ -226,7 +226,7 @@ function markSplitPaid(txnId, name, paid) {
 }
 
 async function deleteTxn(id) {
-  if (!confirm("刪除呢筆記錄？")) return;
+  if (!confirm("刪除呢筆記錄？\n\n刪除後會去垃圾桶，可以喺垃圾桶還原。")) return;
   var idx = txns.findIndex(function(t) { return t.id === id; });
   if (idx === -1) return;
   var deleted = txns[idx];
@@ -344,26 +344,23 @@ function renderHistory() {
       }).join("") +
       "</div>";
   }
+  var trialHtml = "<div style=\"display:flex;gap:8px;flex-wrap:wrap;margin:8px 0\">" +
+    "<button type=\"button\" class=\"chip-ex\" data-q=\"今日搭車用咗 30 蚊\">試下：搭車 30 蚊</button>" +
+    "<button type=\"button\" class=\"chip-ex\" data-q=\"老麥食咗個餐 45 蚊\">試下：老麥 45 蚊</button>" +
+    "</div>";
   if (!list.length && !summary.length) {
-    if (!txns.length) {
-      bookList.innerHTML = "<p class=\"hint\">未有記錄。</p><div style=\"display:flex;gap:8px;flex-wrap:wrap;margin-top:8px\">" +
-        "<button type=\"button\" class=\"chip-ex\" data-q=\"今日搭車用咗 30 蚊\">試下：搭車 30 蚊</button>" +
-        "<button type=\"button\" class=\"chip-ex\" data-q=\"老麥食咗個餐 45 蚊\">試下：老麥 45 蚊</button>" +
-        "</div>";
-      bookList.querySelectorAll(".chip-ex").forEach(function(b) {
-        b.onclick = function() {
-          var ext = localExtract(b.dataset.q);
-          ext.raw_text = b.dataset.q;
-          addCard(ext);
-          showTab("chat");
-        };
-      });
-    } else {
-      bookList.innerHTML = "<p class=\"hint\">冇符合搜尋嘅記錄。</p>";
-    }
+    bookList.innerHTML = "<p class=\"hint\">" + (txns.length ? "冇符合搜尋嘅記錄。" : "未有記錄。") + "</p>" + trialHtml;
+    bookList.querySelectorAll(".chip-ex").forEach(function(b) {
+      b.onclick = function() {
+        var ext = localExtract(b.dataset.q);
+        ext.raw_text = b.dataset.q;
+        addCard(ext);
+        showTab("chat");
+      };
+    });
     return;
   }
-  bookList.innerHTML = summaryHtml + list.map(function(t) {
+  bookList.innerHTML = trialHtml + summaryHtml + list.map(function(t) {
     var where = [];
     if (t.counterparty) where.push("畀" + t.counterparty);
     if (t.merchant) where.push(t.merchant);
@@ -405,6 +402,14 @@ function renderHistory() {
       "<button type=\"button\" class=\"del\" data-del=\"" + t.id + "\" title=\"刪除\">✕</button>" +
       "</div>";
   }).join("");
+  bookList.querySelectorAll(".chip-ex").forEach(function(b) {
+    b.onclick = function() {
+      var ext = localExtract(b.dataset.q);
+      ext.raw_text = b.dataset.q;
+      addCard(ext);
+      showTab("chat");
+    };
+  });
   bookList.querySelectorAll(".del").forEach(function(b) {
     b.onclick = function() { deleteTxn(b.dataset.del); };
   });
