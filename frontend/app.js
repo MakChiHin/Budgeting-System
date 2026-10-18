@@ -48,6 +48,7 @@ function saveLocal(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
 let txns = loadLocal("kotau_txns", []);
 let budget = loadLocal("kotau_budget", 5000);
 let prefs = { ...DEFAULT_PREFS, ...loadLocal("kotau_prefs", {}) };
+let dualPane = loadLocal("kotau_dual_pane", false);
 let chatHistory = [];
 let searchTerm = "";
 let selectedMonth = "";
@@ -79,6 +80,21 @@ function applyPrefs(ext) {
   }
   ext.pref_notes = notes;
   return ext;
+}
+
+function parseSplit(str) {
+  if (!str) return [];
+  if (Array.isArray(str)) return str;
+  return String(str).split(/[,，]/).map(s => s.trim()).filter(Boolean).map(part => {
+    const m = part.match(/^(.+?)\s+([\d.]+)$/);
+    if (m) return { name: m[1].trim(), amount: Number(m[2]), paid: false };
+    return { name: part, amount: null, paid: false };
+  });
+}
+
+function splitsToText(splits) {
+  if (!splits || !splits.length) return "";
+  return splits.map(s => s.amount != null ? `${s.name} ${s.amount}` : s.name).join("，");
 }
 
 function addCard(ext) {
@@ -130,7 +146,8 @@ function addCard(ext) {
     data.counterparty = data.counterparty || null;
     data.purpose = data.purpose || null;
     data.channel = data.channel === "未設定" ? null : data.channel;
-    data.split_with = data.split_with || null;
+    data.splits = parseSplit(data.split_with);
+    data.split_with = splitsToText(data.splits);
     data.raw_text = ext.raw_text || "";
     data.amount_certainty = ext.amount_certainty || "exact";
     await saveTxn(data);
@@ -142,6 +159,7 @@ function addCard(ext) {
 async function saveTxn(data) {
   data.id = data.id || crypto.randomUUID();
   data.created_at = new Date().toISOString();
+  if (!data.splits) data.splits = parseSplit(data.split_with);
   txns.unshift(data);
   saveLocal("kotau_txns", txns);
   renderHistory();
@@ -160,11 +178,22 @@ async function updateTxn(id, data) {
   if (idx === -1) return;
   data.id = id;
   data.created_at = txns[idx].created_at;
+  if (data.split_with !== undefined) data.splits = parseSplit(data.split_with);
   txns[idx] = { ...txns[idx], ...data };
   saveLocal("kotau_txns", txns);
   renderHistory();
   renderChart();
   addMsg("bot", "已更新記錄。");
+}
+
+function markSplitPaid(txnId, name, paid) {
+  const t = txns.find(x => x.id === txnId);
+  if (!t || !t.splits) return;
+  const s = t.splits.find(x => x.name === name);
+  if (s) s.paid = paid;
+  saveLocal("kotau_txns", txns);
+  renderHistory();
+  renderChart();
 }
 
 async function deleteTxn(id) {
@@ -196,13 +225,17 @@ function filteredTxns() {
   });
 }
 
-function parseSplit(str) {
-  if (!str) return [];
-  return str.split(/[,，]/).map(s => s.trim()).filter(Boolean).map(part => {
-    const m = part.match(/^(.+?)\s+([\d.]+)$/);
-    if (m) return { name: m[1].trim(), amount: Number(m[2]) };
-    return { name: part, amount: null };
+function getOwedSummary() {
+  const map = {};
+  txns.forEach(t => {
+    (t.splits || []).forEach(s => {
+      if (!s.name || s.amount == null) return;
+      if (!map[s.name]) map[s.name] = { total: 0, unpaid: 0 };
+      map[s.name].total += s.amount;
+      if (!s.paid) map[s.name].unpaid += s.amount;
+    });
   });
+  return Object.entries(map).map(([name, v]) => ({ name, ...v })).sort((a, b) => b.unpaid - a.unpaid);
 }
 
 function renderHistory() {
@@ -212,19 +245,27 @@ function renderHistory() {
     const base = txns.length ? `${txns.length} 筆` : "未有記錄";
     countEl.textContent = searchTerm ? `${list.length} / ${base} 符合搜尋` : `${base}。入帳之後先會出現。`;
   }
-  if (!list.length) {
+  const summary = getOwedSummary();
+  const summaryHtml = summary.length
+    ? `<div class="owed-summary"><b>邊個總共欠你</b>${summary.map(s => `<div class="owed-row"><span>${s.name}</span><span class="${s.unpaid > 0 ? "unpaid" : "paid"}">${s.unpaid > 0 ? `未還 ${s.unpaid.toFixed(0)}` : "已還清"}</span></div>`).join("")}</div>`
+    : "";
+  if (!list.length && !summary.length) {
     bookList.innerHTML = `<p class="hint">${txns.length ? "冇符合搜尋嘅記錄。" : "未有記錄。講「今日搭車用咗 30 蚊」再擊入帳。"}</p>`;
     return;
   }
-  bookList.innerHTML = list.map(t => {
+  bookList.innerHTML = summaryHtml + list.map(t => {
     const where = [];
     if (t.counterparty) where.push(`界${t.counterparty}`);
     if (t.merchant) where.push(t.merchant);
     if (t.purpose) where.push(t.purpose);
     const bits = [t.channel, t.payment_method, CAT_LABEL[t.category]].filter(Boolean);
-    const splits = parseSplit(t.split_with);
+    const splits = t.splits || parseSplit(t.split_with);
     const splitHtml = splits.length
-      ? `<small class="split">AA：${splits.map(s => s.amount != null ? `${s.name} 欠 ${s.amount}` : s.name).join(" · ")}</small>`
+      ? `<div class="splits">${splits.map(s => `
+          <div class="split-item ${s.paid ? "paid" : "unpaid"}">
+            <span>${s.name}${s.amount != null ? ` 欠 ${s.amount}` : ""}</span>
+            <button type="button" class="mark-paid" data-txn="${t.id}" data-name="${s.name}" data-paid="${!s.paid}">${s.paid ? "已還" : "未還"}</button>
+          </div>`).join("")}</div>`
       : "";
     return `
       <div class="row" data-id="${t.id}">
@@ -245,6 +286,9 @@ function renderHistory() {
   });
   bookList.querySelectorAll(".edit").forEach(b => {
     b.onclick = () => openEditSheet(b.dataset.edit);
+  });
+  bookList.querySelectorAll(".mark-paid").forEach(b => {
+    b.onclick = () => markSplitPaid(b.dataset.txn, b.dataset.name, b.dataset.paid === "true");
   });
 }
 
@@ -331,7 +375,7 @@ function openEditSheet(id) {
   sheet.querySelector("[name=payment_method]").value = t.payment_method || "Unknown";
   sheet.querySelector("[name=transaction_type]").value = t.transaction_type || "purchase";
   const splitInput = sheet.querySelector("[name=split_with]");
-  if (splitInput) splitInput.value = t.split_with || "";
+  if (splitInput) splitInput.value = t.split_with || splitsToText(t.splits) || "";
   $("#editBack").hidden = false;
 }
 
@@ -373,7 +417,7 @@ function localExtract(text) {
     raw_text: text, amount: null, currency: "HKD", merchant: null,
     category: "Others", payment_method: null, original_amount: null,
     discount_amount: 0, transaction_type: "purchase", amount_certainty: "unknown",
-    counterparty: null, purpose: null, channel: null, split_with: null,
+    counterparty: null, purpose: null, channel: null, split_with: null, splits: [],
     extractor: "rule_based_v0_js",
   };
   const approx = /幾|左右|大概|約/.test(text);
@@ -420,6 +464,15 @@ function showTab(id) {
   document.querySelectorAll(".dock button").forEach(b => b.classList.toggle("active", b.dataset.tab === id));
   document.querySelectorAll(".panel").forEach(p => p.classList.toggle("active", p.id === id));
   document.body.classList.toggle("desktop-chart", id === "chart");
+  applyDualPane();
+}
+
+function applyDualPane() {
+  document.body.classList.toggle("dual-pane", dualPane);
+  const histBtn = document.querySelector('.dock button[data-tab="history"]');
+  if (histBtn) histBtn.style.display = dualPane ? "none" : "";
+  const dualBtn = $("#dualPaneBtn");
+  if (dualBtn) dualBtn.textContent = dualPane ? "單頁" : "雙頁";
 }
 
 $("#dock").onclick = (e) => {
@@ -523,7 +576,8 @@ $("#editForm").onsubmit = (e) => {
   const data = Object.fromEntries([...sheet.querySelectorAll("input,select")].map(el => [el.name, el.value]));
   data.amount = data.amount === "" ? null : Number(data.amount);
   data.channel = data.channel === "未設定" ? null : data.channel;
-  data.split_with = data.split_with || null;
+  data.splits = parseSplit(data.split_with);
+  data.split_with = splitsToText(data.splits);
   updateTxn(id, data);
   $("#editBack").hidden = true;
 };
@@ -541,6 +595,21 @@ if (monthSelect) {
   monthSelect.onchange = () => {
     selectedMonth = monthSelect.value;
     renderChart();
+  };
+}
+
+const dualBtn = $("#dualPaneBtn");
+if (dualBtn) {
+  dualBtn.onclick = () => {
+    if (!dualPane) {
+      if (!confirm("切換去雙頁查看？底欄嘅「歷史」會隱藏，左邊對話、右邊歷史一齊出現。")) return;
+      dualPane = true;
+    } else {
+      dualPane = false;
+    }
+    saveLocal("kotau_dual_pane", dualPane);
+    applyDualPane();
+    if (dualPane) showTab("chat");
   };
 }
 
@@ -566,6 +635,7 @@ if (exportBtn) {
 }
 
 // init
+applyDualPane();
 renderHistory();
 renderChart();
 addMsg("bot", "你好。講「今日搭車用咗 30 蚊」，如果右上角喜好設咗港鐵，確認卡會預填交通工具同用途。擊入帳之後先出現嘅「歷史」。");
