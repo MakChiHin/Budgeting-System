@@ -585,16 +585,32 @@ async function send(text) {
   addMsg("user", text);
   if (/超支|預算|幾多錢|用咗幾多/.test(text)) {
     var month = monthTxns(selectedMonth);
+    var total = month.reduce(function(s, t) { return s + Number(t.amount || 0); }, 0);
     var catMap = { "飲食": "Food & Dining", "食": "Food & Dining", "交通": "Transport", "購物": "Shopping" };
     var targetCat = null;
     for (var k in catMap) { if (text.indexOf(k) !== -1) { targetCat = catMap[k]; break; } }
-    var filtered = targetCat ? month.filter(function(t) { return t.category === targetCat; }) : month;
-    var spent = filtered.reduce(function(s, t) { return s + Number(t.amount || 0); }, 0);
-    var catName = targetCat ? (CAT_LABEL[targetCat] || targetCat) : "總共";
-    var over = spent > budget;
-    var msg = over
-      ? (catName + "已超支。已用 HKD " + spent.toFixed(0) + "，預算 " + budget + "，超 " + (spent - budget).toFixed(0) + "。")
-      : (catName + "未超支。已用 HKD " + spent.toFixed(0) + " / " + budget + "。");
+    var catSpent = {};
+    month.forEach(function(t) {
+      var c = t.category || "Others";
+      catSpent[c] = (catSpent[c] || 0) + Number(t.amount || 0);
+    });
+    var overCats = Object.keys(catSpent).filter(function(c) { return catSpent[c] > 0; }).sort(function(a, b) { return catSpent[b] - catSpent[a]; });
+    var topCat = overCats[0];
+    var topName = CAT_LABEL[topCat] || topCat;
+    var topAmt = catSpent[topCat] || 0;
+    if (targetCat) {
+      var targetSpent = catSpent[targetCat] || 0;
+      var targetName = CAT_LABEL[targetCat] || targetCat;
+      if (total > budget) {
+        var msg = targetName + "未超支（已用 HKD " + targetSpent.toFixed(0) + "），但總共已用 HKD " + total.toFixed(0) + "，超預算 " + (total - budget).toFixed(0) + "。主要係" + topName + "用咗 HKD " + topAmt.toFixed(0) + "。";
+      } else {
+        var msg = targetName + "未超支。已用 HKD " + targetSpent.toFixed(0) + "，總共 HKD " + total.toFixed(0) + " / " + budget + "。";
+      }
+    } else {
+      var msg = total > budget
+        ? ("已超支。已用 HKD " + total.toFixed(0) + "，預算 " + budget + "，超 " + (total - budget).toFixed(0) + "。主要係" + topName + "用咗 HKD " + topAmt.toFixed(0) + "。")
+        : ("未超支。已用 HKD " + total.toFixed(0) + " / " + budget + "。");
+    }
     addMsg("bot", msg);
     return;
   }
