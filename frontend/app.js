@@ -135,6 +135,7 @@ function addCard(ext) {
     "<p class=\"heard\">聽到：" + (ext.raw_text || "（冇原文）").replace(/</g, "") + "</p>" +
     (ext.pref_notes && ext.pref_notes.length ? "<p class=\"pref-note\">" + ext.pref_notes.join(" · ") + "，可改完先入。</p>" : "") +
     "<div class=\"grid\">" +
+      "<label>日期 <input name=\"txn_date\" type=\"date\" value=\"" + (ext.txn_date || new Date().toISOString().slice(0,10)) + "\"></label>" +
       "<label>金額 <input name=\"amount\" type=\"number\" step=\"0.1\" value=\"" + (ext.amount ?? "") + "\"></label>" +
       "<label>貨幣 <select name=\"currency\">" + CURRENCIES.map(function(c){return "<option " + (c === (ext.currency || "HKD") ? "selected" : "") + ">" + c + "</option>"}).join("") + "</select></label>" +
       "<label>商戶／公司 <select name=\"merchant\">" + ["", "McDonald's (老麥)", "茶餐廳", "港鐵", "巴士", "超市", "便利店", "餐廳"].map(function(c){return "<option " + (c === (ext.merchant || "") ? "selected" : "") + ">" + (c || "未設定") + "</option>"}).join("") + "</select></label>" +
@@ -169,6 +170,7 @@ function addCard(ext) {
     data.split_with = splitsToText(data.splits);
     data.raw_text = ext.raw_text || "";
     data.amount_certainty = ext.amount_certainty || "exact";
+    if (data.txn_date) data.created_at = new Date(data.txn_date).toISOString();
     if (data.splits.length && data.amount) {
       var splitSum = data.splits.reduce(function(s, x) { return s + (x.amount || 0); }, 0);
       if (Math.abs(splitSum - data.amount) > 0.01) {
