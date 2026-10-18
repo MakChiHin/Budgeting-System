@@ -643,7 +643,7 @@ var dualBtn = $("#dualPaneBtn");
 if (dualBtn) {
   dualBtn.onclick = function() {
     if (!dualPane) {
-      if (!confirm("切換去雙頁查看？底欄嘅「歷史」會隱藏，左邊對話、右邊歷史一齊出現。")) return;
+      if (!confirm("切換去雙頁查看？")) return;
       dualPane = true;
     } else {
       dualPane = false;
