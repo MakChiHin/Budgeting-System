@@ -167,20 +167,13 @@ def add_txn(body: TxnIn):
     item["created_at"] = datetime.now(timezone.utc).isoformat()
     rows.insert(0, item)
     _save_txns(rows)
-    if supabase_admin:
-        try:
-            sb_data = {
-                "id": item["id"],
-                "user_id": "00000000-0000-0000-0000-000000000000",
-                "amount": item.get("amount"),
-                "currency": item.get("currency", "HKD"),
-                "merchant": item.get("merchant"),
-                "raw_text": item.get("raw_text"),
-                "transaction_date": item["created_at"],
-            }
-            supabase_admin.table("transactions").insert(sb_data).execute()
-        except Exception as e:
-            print(f"Supabase sync failed: {e}")
+    # Supabase sync disabled until login system is ready
+    # if supabase_admin:
+    #     try:
+    #         sb_data = {...}
+    #         supabase_admin.table("transactions").insert(sb_data).execute()
+    #     except Exception as e:
+    #         print(f"Supabase sync failed: {e}")
     return item
 
 
