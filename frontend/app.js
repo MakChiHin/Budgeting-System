@@ -87,7 +87,8 @@ function parseSplit(str) {
   if (!str) return [];
   if (Array.isArray(str)) return str;
   return String(str).split(/[,，]/).map(function(s) { return s.trim(); }).filter(Boolean).map(function(part) {
-    var m = part.match(/^(.+?)\s+([\d.]+)$/);
+    // Support both "a 20" and "a20" formats
+    var m = part.match(/^(.+?)\s+([\d.]+)$/) || part.match(/^([A-Za-z\u4e00-\u9fff]+)([\d.]+)$/);
     if (m) return { name: m[1].trim(), amount: Number(m[2]), paid: false };
     return { name: part, amount: null, paid: false };
   });
@@ -130,7 +131,7 @@ function addCard(ext) {
       "<label>類別 <select name=\"category\">" + catOpts + "</select></label>" +
       "<label>支付 <select name=\"payment_method\">" + payOpts + "</select></label>" +
       "<label>類型 <select name=\"transaction_type\">" + typeOpts + "</select></label>" +
-      "<label>AA 拆帳（邊個欠你） <input name=\"split_with\" value=\"" + (ext.split_with || "") + "\" placeholder=\"阿明 30，小明 25\"></label>" +
+      "<label>AA 拆帳（邊個欠你） <input name=\"split_with\" value=\"" + (ext.split_with || "") + "\" placeholder=\"阿明 30，小明 25 或 a20\"></label>" +
     "</div>" +
     "<div class=\"actions\">" +
       "<button class=\"no\" type=\"button\">唔入</button>" +
@@ -279,10 +280,10 @@ function renderHistory() {
       splitHtml = "<div class=\"splits\">" +
         splits.map(function(s) {
           var cls = s.paid ? "paid" : "unpaid";
-          var amt = s.amount != null ? (" 欠 " + s.amount) : "";
+          var label = s.amount != null ? (s.name + " 欠 " + s.amount) : s.name;
           var btn = s.paid ? "已還" : "未還";
           return "<div class=\"split-item " + cls + "\">" +
-            "<span>" + s.name + amt + "</span>" +
+            "<span>" + label + "</span>" +
             "<button type=\"button\" class=\"mark-paid\" data-txn=\"" + t.id + "\" data-name=\"" + s.name + "\" data-paid=\"" + (!s.paid) + "\">" + btn + "</button>" +
             "</div>";
         }).join("") +
