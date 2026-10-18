@@ -4,21 +4,34 @@ const chatLog = $("#chatLog");
 const bookList = $("#bookList");
 const input = $("#input");
 
-const CATS = ["Food & Dining", "Transport", "Shopping", "Bills & Utilities", "Entertainment", "Others"];
+const CATS = [
+  "Food & Dining", "Transport", "Shopping",
+  "Rent", "Utilities", "Household",
+  "Bills & Utilities", "Entertainment",
+  "Transfer", "Others"
+];
 const CAT_LABEL = {
   "Food & Dining": "飲食",
   "Transport": "交通",
   "Shopping": "購物",
+  "Rent": "租金",
+  "Utilities": "水電煤氣",
+  "Household": "家用",
   "Bills & Utilities": "賬單",
   "Entertainment": "娛樂",
+  "Transfer": "轉帳／過數",
   "Others": "其他",
 };
 const CAT_COLOR = {
   "Food & Dining": "#e76f51",
   "Transport": "#2a9d8f",
   "Shopping": "#e9c46a",
-  "Bills & Utilities": "#264653",
+  "Rent": "#264653",
+  "Utilities": "#457b9d",
+  "Household": "#a8dadc",
+  "Bills & Utilities": "#1d3557",
   "Entertainment": "#f4a261",
+  "Transfer": "#9b5de5",
   "Others": "#6b7c83",
 };
 const PAYS = ["Octopus", "PayMe", "FPS", "AlipayHK", "WeChat Pay", "Credit Card", "Cash", "Unknown"];
@@ -37,7 +50,7 @@ let budget = loadLocal("kotau_budget", 5000);
 let prefs = { ...DEFAULT_PREFS, ...loadLocal("kotau_prefs", {}) };
 let chatHistory = [];
 let searchTerm = "";
-let selectedMonth = ""; // "" = current, else "YYYY-MM"
+let selectedMonth = "";
 
 function addMsg(role, text) {
   const div = document.createElement("div");
@@ -79,9 +92,9 @@ function addCard(ext) {
     <div class="grid">
       <label>金額 <input name="amount" type="number" step="0.1" value="${ext.amount ?? ""}"></label>
       <label>貨幣 <input name="currency" value="${ext.currency || "HKD"}"></label>
-      <label>商戶 <input name="merchant" value="${ext.merchant || ""}"></label>
-      <label>轉界邊個 <input name="counterparty" value="${ext.counterparty || ""}" placeholder="阿明"></label>
-      <label>做咩用 <input name="purpose" value="${ext.purpose || ""}" placeholder="搭車返工"></label>
+      <label>商戶／公司 <input name="merchant" value="${ext.merchant || ""}" placeholder="例如：老麥"></label>
+      <label>界邊個／AA對象 <input name="counterparty" value="${ext.counterparty || ""}" placeholder="阿明、小明"></label>
+      <label>做咩用 <input name="purpose" value="${ext.purpose || ""}" placeholder="搭車返工、食飯"></label>
       <label>交通／渠道
         <select name="channel">${CHANNELS.map(c => `<option ${c === (ext.channel || "未設定") ? "selected" : ""}>${c}</option>`).join("")}</select>
       </label>
@@ -93,9 +106,10 @@ function addCard(ext) {
       </label>
       <label>類型
         <select name="transaction_type">
-          ${["purchase", "refund", "transfer"].map(c => `<option ${c === (ext.transaction_type || "purchase") ? "selected" : ""}>${c}</option>`).join("")}
+          ${"["purchase", "refund", "transfer", "split"].map(c => `<option ${c === (ext.transaction_type || "purchase") ? "selected" : ""}>${c}</option>`).join("")}
         </select>
       </label>
+      <label>AA 拆帳（邊個欠你） <input name="split_with" value="${ext.split_with || ""}" placeholder="阿明 30，小明 25"></label>
     </div>
     <div class="actions">
       <button class="no" type="button">唔入</button>
@@ -116,11 +130,12 @@ function addCard(ext) {
     data.counterparty = data.counterparty || null;
     data.purpose = data.purpose || null;
     data.channel = data.channel === "未設定" ? null : data.channel;
+    data.split_with = data.split_with || null;
     data.raw_text = ext.raw_text || "";
     data.amount_certainty = ext.amount_certainty || "exact";
     await saveTxn(data);
     wrap.remove();
-    addMsg("bot", "入咗帳。去下面「歷史」睇邊個、做咩用。");
+    addMsg("bot", "入咗帳。去下面「歷史」睇界咗邊個、做咩用。");
   };
 }
 
@@ -150,7 +165,6 @@ async function updateTxn(id, data) {
   renderHistory();
   renderChart();
   addMsg("bot", "已更新記錄。");
-  // backend currently has no PUT; local only for early version
 }
 
 async function deleteTxn(id) {
@@ -166,6 +180,7 @@ async function deleteTxn(id) {
 
 function titleOf(t) {
   if (t.transaction_type === "transfer" && t.counterparty) return `轉界${t.counterparty}`;
+  if (t.transaction_type === "split" && t.counterparty) return `AA 界${t.counterparty}`;
   return t.counterparty || t.merchant || t.purpose || CAT_LABEL[t.category] || "未命名";
 }
 
@@ -174,10 +189,19 @@ function filteredTxns() {
   const q = searchTerm.toLowerCase();
   return txns.filter(t => {
     const hay = [
-      t.amount, t.merchant, t.counterparty, t.purpose, t.channel,
+      t.amount, t.merchant, t.counterparty, t.purpose, t.channel, t.split_with,
       CAT_LABEL[t.category] || t.category, t.payment_method, t.raw_text, t.transaction_type
     ].filter(Boolean).join(" ").toLowerCase();
     return hay.includes(q);
+  });
+}
+
+function parseSplit(str) {
+  if (!str) return [];
+  return str.split(/[,，]/).map(s => s.trim()).filter(Boolean).map(part => {
+    const m = part.match(/^(.+?)\s+([\d.]+)$/);
+    if (m) return { name: m[1].trim(), amount: Number(m[2]) };
+    return { name: part, amount: null };
   });
 }
 
@@ -193,13 +217,23 @@ function renderHistory() {
     return;
   }
   bookList.innerHTML = list.map(t => {
-    const bits = [t.purpose, t.channel, t.payment_method].filter(Boolean);
+    const where = [];
+    if (t.counterparty) where.push(`界${t.counterparty}`);
+    if (t.merchant) where.push(t.merchant);
+    if (t.purpose) where.push(t.purpose);
+    const bits = [t.channel, t.payment_method, CAT_LABEL[t.category]].filter(Boolean);
+    const splits = parseSplit(t.split_with);
+    const splitHtml = splits.length
+      ? `<small class="split">AA：${splits.map(s => s.amount != null ? `${s.name} 欠 ${s.amount}` : s.name).join(" · ")}</small>`
+      : "";
     return `
       <div class="row" data-id="${t.id}">
         <div>
           <b>${titleOf(t)}</b>
-          <small>${bits.join(" · ") || CAT_LABEL[t.category] || ""}</small>
-          <small>${(t.raw_text || "").slice(0, 48)}</small>
+          <small>${where.join(" · ") || bits[0] || ""}</small>
+          <small>${bits.join(" · ")}</small>
+          ${splitHtml}
+          <small class="raw">${(t.raw_text || "").slice(0, 60)}</small>
         </div>
         <div class="amt">${t.currency || "HKD"} ${t.amount ?? "—"}</div>
         <button type="button" class="edit" data-edit="${t.id}" title="修改">✎</button>
@@ -248,7 +282,7 @@ function renderChart() {
   const sel = $("#monthSelect");
   if (sel) {
     const cur = selectedMonth || months[0] || "";
-    sel.innerHTML = months.map(ym => `<option value="${ym}" ${ym === cur ? "selected" : ""}>${ym.replace("-", "年")}月</option>`).join("");
+    sel.innerHTML = months.map(ym => `<option value="${ym}" ${ym === cur ? "selected" : ""}>${ym.replace("-", "年")} 月</option>`).join("");
     if (!selectedMonth) selectedMonth = cur;
   }
   const month = monthTxns(selectedMonth);
@@ -274,7 +308,6 @@ function renderChart() {
     const col = CAT_COLOR[c] || "#2a9d8f";
     return `<div class="hbar"><span>${CAT_LABEL[c]}</span><div class="track"><span style="width:${w}%;background:${col}"></span></div><b>${v.toFixed(0)}</b></div>`;
   }).join("");
-  // simple legend
   const legend = $("#legend");
   if (legend) {
     legend.innerHTML = CATS.map(c => `<span class="leg"><i style="background:${CAT_COLOR[c]}"></i>${CAT_LABEL[c]}</span>`).join("");
@@ -297,6 +330,8 @@ function openEditSheet(id) {
   catSel.innerHTML = CATS.map(c => `<option value="${c}" ${c === t.category ? "selected" : ""}>${CAT_LABEL[c]}</option>`).join("");
   sheet.querySelector("[name=payment_method]").value = t.payment_method || "Unknown";
   sheet.querySelector("[name=transaction_type]").value = t.transaction_type || "purchase";
+  const splitInput = sheet.querySelector("[name=split_with]");
+  if (splitInput) splitInput.value = t.split_with || "";
   $("#editBack").hidden = false;
 }
 
@@ -323,7 +358,7 @@ async function send(text) {
         ? (ext.amount != null
           ? `我估呢筆係 ${ext.currency} ${ext.amount}。核對用途同轉帳對象，哒先入帳。`
           : "呢句似記帳，但未見到金額。")
-        : "可以講開支，或者去「圖表」睇本月分佈。喜好嘅右上角齒輪。",
+        : "可以講開支，或者去「圖表」睇本月分佈。喜好嘅右上角歪輪。",
       extraction: expense ? ext : null,
     };
   }
@@ -338,7 +373,7 @@ function localExtract(text) {
     raw_text: text, amount: null, currency: "HKD", merchant: null,
     category: "Others", payment_method: null, original_amount: null,
     discount_amount: 0, transaction_type: "purchase", amount_certainty: "unknown",
-    counterparty: null, purpose: null, channel: null,
+    counterparty: null, purpose: null, channel: null, split_with: null,
     extractor: "rule_based_v0_js",
   };
   const approx = /幾|左右|大概|約/.test(text);
@@ -371,6 +406,7 @@ function localExtract(text) {
   else if (/八達通|嘟/.test(text)) out.payment_method = "Octopus";
   else if (/界咗|現金/.test(text)) out.payment_method = "Cash";
   if (/轉|過咗|夾錢/.test(text)) out.transaction_type = "transfer";
+  if (/AA|拆帳|欠/.test(text)) out.transaction_type = "split";
   const who = text.match(/(?:界|比|過[咗左]?數?界)\s*([^\s，。]{1,8})/);
   if (who && !/咗|左|蚊/.test(who[1])) out.counterparty = who[1].replace(/夾錢|食飯/g, "");
   if (/夾錢/.test(text)) out.purpose = "夾錢";
@@ -464,72 +500,72 @@ function openPrefs() {
   $("#prefPay").value = prefs.payment || "Octopus";
   $("#sheetBack").hidden = false;
 }
+
 $("#gearBtn").onclick = openPrefs;
 $("#prefClose").onclick = () => { $("#sheetBack").hidden = true; };
-$("#sheetBack").onclick = (e) => { if (e.target.id === "sheetBack") $("#sheetBack").hidden = true; };
 $("#prefSheet").onsubmit = (e) => {
   e.preventDefault();
   prefs = {
     transport: $("#prefTransport").value,
-    transport_purpose: $("#prefPurpose").value.trim() || "搭車",
+    transport_purpose: $("#prefPurpose").value,
     payment: $("#prefPay").value,
   };
   saveLocal("kotau_prefs", prefs);
   $("#sheetBack").hidden = true;
-  addMsg("bot", `喜好已存：搭車用${prefs.transport}，用途「${prefs.transport_purpose}」。`);
+  addMsg("bot", "喜好已儲存。");
 };
 
-function exportCsv() {
-  if (!txns.length) { addMsg("bot", "未有記錄，冇啲匯出。"); return; }
-  const cols = ["created_at", "amount", "currency", "merchant", "counterparty", "purpose", "channel", "category", "payment_method", "transaction_type", "raw_text"];
-  const lines = [cols.join(",")];
-  for (const t of txns) {
-    lines.push(cols.map(c => {
-      const v = t[c] == null ? "" : String(t[c]);
-      return `"${v.replace(/"/g, '""')}"`;
-    }).join(","));
-  }
-  const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `kotau-${new Date().toISOString().slice(0, 10)}.csv`;
-  a.click();
-  URL.revokeObjectURL(a.href);
-  addMsg("bot", "已匯出 CSV。");
-}
-$("#exportBtn")?.addEventListener("click", exportCsv);
-
-// new listeners
-$("#searchInput")?.addEventListener("input", (e) => {
-  searchTerm = e.target.value;
-  renderHistory();
-});
-$("#monthSelect")?.addEventListener("change", (e) => {
-  selectedMonth = e.target.value;
-  renderChart();
-});
-$("#editClose")?.addEventListener("click", () => { $("#editBack").hidden = true; });
-$("#editBack")?.addEventListener("click", (e) => { if (e.target.id === "editBack") $("#editBack").hidden = true; });
-$("#editForm")?.addEventListener("submit", (e) => {
+$("#editClose").onclick = () => { $("#editBack").hidden = true; };
+$("#editForm").onsubmit = (e) => {
   e.preventDefault();
-  const id = $("#editSheet").dataset.id;
-  if (!id) return;
-  const form = e.target;
-  const data = Object.fromEntries([...form.querySelectorAll("input,select")].map(el => [el.name, el.value]));
+  const sheet = $("#editSheet");
+  const id = sheet.dataset.id;
+  const data = Object.fromEntries([...sheet.querySelectorAll("input,select")].map(el => [el.name, el.value]));
   data.amount = data.amount === "" ? null : Number(data.amount);
-  data.original_amount = data.amount;
-  data.merchant = data.merchant || null;
-  data.counterparty = data.counterparty || null;
-  data.purpose = data.purpose || null;
   data.channel = data.channel === "未設定" ? null : data.channel;
+  data.split_with = data.split_with || null;
   updateTxn(id, data);
   $("#editBack").hidden = true;
-});
+};
 
-addMsg("bot", "你好。講「今日搭車用咗 30 蚊」，如果右上角喜好設咗港鐵，確認卡會預填交通工具同用途。擊入帳之後先出現嘅「歷史」。");
+const searchInput = $("#searchInput");
+if (searchInput) {
+  searchInput.oninput = () => {
+    searchTerm = searchInput.value;
+    renderHistory();
+  };
+}
+
+const monthSelect = $("#monthSelect");
+if (monthSelect) {
+  monthSelect.onchange = () => {
+    selectedMonth = monthSelect.value;
+    renderChart();
+  };
+}
+
+const exportBtn = $("#exportBtn");
+if (exportBtn) {
+  exportBtn.onclick = () => {
+    if (!txns.length) return addMsg("bot", "未有記錄可以匯出。");
+    const headers = ["日期", "金額", "貨幣", "商戶", "界邊個", "用途", "類別", "支付", "AA拆帳", "原文"];
+    const rows = txns.map(t => [
+      t.created_at ? new Date(t.created_at).toLocaleString("zh-HK") : "",
+      t.amount ?? "", t.currency || "HKD", t.merchant || "", t.counterparty || "",
+      t.purpose || "", CAT_LABEL[t.category] || t.category, t.payment_method || "", t.split_with || "", t.raw_text || ""
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `kotau_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    addMsg("bot", "已匯出 CSV。");
+  };
+}
+
+// init
 renderHistory();
 renderChart();
-fetch(`${API}/api/health`).then(r => r.json()).then(h => {
-  $("#modelBadge").textContent = `NER: ${h.ner}`;
-}).catch(() => { $("#modelBadge").textContent = "離線 · 本機規則"; });
-if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});
+addMsg("bot", "你好。講「今日搭車用咗 30 蚊」，如果右上角喜好設咗港鐵，確認卡會預填交通工具同用途。擊入帳之後先出現嘅「歷史」。");
