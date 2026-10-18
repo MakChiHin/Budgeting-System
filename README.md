@@ -7,7 +7,7 @@ Repo：https://github.com/MakChiHin/Budgeting-System
 
 ---
 
-## 組員點樣開嚟測試（Windows）
+## 點樣開嚟測試（Windows）
 
 1. 安裝 [Python 3.11+](https://www.python.org/downloads/)（安裝時勾「Add Python to PATH」）
 2. 開 **PowerShell**：
