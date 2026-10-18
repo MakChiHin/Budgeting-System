@@ -140,6 +140,8 @@ html, body {
 }
 .row b { font-size: 16px; }
 .row small { color: var(--muted); display: block; margin-top: 2px; }
+.row small.split { color: #9b5de5; font-weight: 600; }
+.row small.raw { font-size: 11px; opacity: 0.7; }
 .amt { font-weight: 700; color: var(--navy); white-space: nowrap; }
 .del {
   border: 0; background: transparent; color: var(--warn); font-size: 16px;
