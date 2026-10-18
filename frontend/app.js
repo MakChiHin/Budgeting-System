@@ -36,6 +36,7 @@ const CAT_COLOR = {
 };
 const PAYS = ["Octopus", "PayMe", "FPS", "AlipayHK", "WeChat Pay", "Credit Card", "Cash", "Unknown"];
 const CHANNELS = ["港鐵", "巴士", "小巴", "的士", "紅Van", "未設定"];
+const TXN_TYPES = ["purchase", "refund", "transfer", "split"];
 
 const DEFAULT_PREFS = { transport: "港鐵", transport_purpose: "搭車", payment: "Octopus" };
 
@@ -55,7 +56,7 @@ let selectedMonth = "";
 
 function addMsg(role, text) {
   const div = document.createElement("div");
-  div.className = `msg ${role}`;
+  div.className = "msg " + role;
   div.textContent = text;
   chatLog.appendChild(div);
   chatLog.scrollTop = chatLog.scrollHeight;
@@ -71,7 +72,7 @@ function applyPrefs(ext) {
     notes.push("交通工具用喜好預填");
   }
   if (ride && !ext.purpose) {
-    ext.purpose = prefs.transport_purpose || `搭${ext.channel || "車"}`;
+    ext.purpose = prefs.transport_purpose || ("搭" + (ext.channel || "車"));
     notes.push("用途用喜好預填");
   }
   if (!ext.payment_method && prefs.payment && prefs.payment !== "Unknown") {
@@ -85,8 +86,8 @@ function applyPrefs(ext) {
 function parseSplit(str) {
   if (!str) return [];
   if (Array.isArray(str)) return str;
-  return String(str).split(/[,，]/).map(s => s.trim()).filter(Boolean).map(part => {
-    const m = part.match(/^(.+?)\s+([\d.]+)$/);
+  return String(str).split(/[,，]/).map(function(s) { return s.trim(); }).filter(Boolean).map(function(part) {
+    var m = part.match(/^(.+?)\s+([\d.]+)$/);
     if (m) return { name: m[1].trim(), amount: Number(m[2]), paid: false };
     return { name: part, amount: null, paid: false };
   });
@@ -94,50 +95,54 @@ function parseSplit(str) {
 
 function splitsToText(splits) {
   if (!splits || !splits.length) return "";
-  return splits.map(s => s.amount != null ? `${s.name} ${s.amount}` : s.name).join("，");
+  return splits.map(function(s) {
+    return s.amount != null ? (s.name + " " + s.amount) : s.name;
+  }).join("，");
 }
 
 function addCard(ext) {
   ext = applyPrefs({ ...ext });
   const wrap = document.createElement("div");
   wrap.className = "card";
-  wrap.innerHTML = `
-    <h3>確認入帳</h3>
-    <p class="heard">聽到：${(ext.raw_text || "（冇原文）").replace(/</g, "")}</p>
-    ${ext.pref_notes?.length ? `<p class="pref-note">${ext.pref_notes.join(" · ")}，可改完先入。</p>` : ""}
-    <div class="grid">
-      <label>金額 <input name="amount" type="number" step="0.1" value="${ext.amount ?? ""}"></label>
-      <label>貨幣 <input name="currency" value="${ext.currency || "HKD"}"></label>
-      <label>商戶／公司 <input name="merchant" value="${ext.merchant || ""}" placeholder="例如：老麥"></label>
-      <label>界邊個／AA對象 <input name="counterparty" value="${ext.counterparty || ""}" placeholder="阿明、小明"></label>
-      <label>做咩用 <input name="purpose" value="${ext.purpose || ""}" placeholder="搭車返工、食飯"></label>
-      <label>交通／渠道
-        <select name="channel">${CHANNELS.map(c => `<option ${c === (ext.channel || "未設定") ? "selected" : ""}>${c}</option>`).join("")}</select>
-      </label>
-      <label>類別
-        <select name="category">${CATS.map(c => `<option ${c === ext.category ? "selected" : ""}>${CAT_LABEL[c] || c}</option>`).join("")}</select>
-      </label>
-      <label>支付
-        <select name="payment_method">${PAYS.map(c => `<option ${c === (ext.payment_method || "Unknown") ? "selected" : ""}>${c}</option>`).join("")}</select>
-      </label>
-      <label>類型
-        <select name="transaction_type">
-          ${"["purchase", "refund", "transfer", "split"].map(c => `<option ${c === (ext.transaction_type || "purchase") ? "selected" : ""}>${c}</option>`).join("")}
-        </select>
-      </label>
-      <label>AA 拆帳（邊個欠你） <input name="split_with" value="${ext.split_with || ""}" placeholder="阿明 30，小明 25"></label>
-    </div>
-    <div class="actions">
-      <button class="no" type="button">唔入</button>
-      <button class="ok" type="button">入帳</button>
-    </div>
-  `;
+  var channelOpts = CHANNELS.map(function(c) {
+    return "<option " + (c === (ext.channel || "未設定") ? "selected" : "") + ">" + c + "</option>";
+  }).join("");
+  var catOpts = CATS.map(function(c) {
+    return "<option " + (c === ext.category ? "selected" : "") + ">" + (CAT_LABEL[c] || c) + "</option>";
+  }).join("");
+  var payOpts = PAYS.map(function(c) {
+    return "<option " + (c === (ext.payment_method || "Unknown") ? "selected" : "") + ">" + c + "</option>";
+  }).join("");
+  var typeOpts = TXN_TYPES.map(function(c) {
+    return "<option " + (c === (ext.transaction_type || "purchase") ? "selected" : "") + ">" + c + "</option>";
+  }).join("");
+  wrap.innerHTML =
+    "<h3>確認入帳</h3>" +
+    "<p class=\"heard\">聽到：" + (ext.raw_text || "（冇原文）").replace(/</g, "") + "</p>" +
+    (ext.pref_notes && ext.pref_notes.length ? "<p class=\"pref-note\">" + ext.pref_notes.join(" · ") + "，可改完先入。</p>" : "") +
+    "<div class=\"grid\">" +
+      "<label>金額 <input name=\"amount\" type=\"number\" step=\"0.1\" value=\"" + (ext.amount ?? "") + "\"></label>" +
+      "<label>貨幣 <input name=\"currency\" value=\"" + (ext.currency || "HKD") + "\"></label>" +
+      "<label>商戶／公司 <input name=\"merchant\" value=\"" + (ext.merchant || "") + "\" placeholder=\"例如：老麥\"></label>" +
+      "<label>界邊個／AA對象 <input name=\"counterparty\" value=\"" + (ext.counterparty || "") + "\" placeholder=\"阿明、小明\"></label>" +
+      "<label>做咩用 <input name=\"purpose\" value=\"" + (ext.purpose || "") + "\" placeholder=\"搭車返工、食飯\"></label>" +
+      "<label>交通／渠道 <select name=\"channel\">" + channelOpts + "</select></label>" +
+      "<label>類別 <select name=\"category\">" + catOpts + "</select></label>" +
+      "<label>支付 <select name=\"payment_method\">" + payOpts + "</select></label>" +
+      "<label>類型 <select name=\"transaction_type\">" + typeOpts + "</select></label>" +
+      "<label>AA 拆帳（邊個欠你） <input name=\"split_with\" value=\"" + (ext.split_with || "") + "\" placeholder=\"阿明 30，小明 25\"></label>" +
+    "</div>" +
+    "<div class=\"actions\">" +
+      "<button class=\"no\" type=\"button\">唔入</button>" +
+      "<button class=\"ok\" type=\"button\">入帳</button>" +
+    "</div>";
   chatLog.appendChild(wrap);
   chatLog.scrollTop = chatLog.scrollHeight;
-  wrap.querySelector(".no").onclick = () => wrap.remove();
-  wrap.querySelector(".ok").onclick = async () => {
-    const data = Object.fromEntries([...wrap.querySelectorAll("input,select")].map(el => [el.name, el.value]));
-    const catEntry = Object.entries(CAT_LABEL).find(([, label]) => label === data.category);
+  wrap.querySelector(".no").onclick = function() { wrap.remove(); };
+  wrap.querySelector(".ok").onclick = async function() {
+    var data = {};
+    wrap.querySelectorAll("input,select").forEach(function(el) { data[el.name] = el.value; });
+    var catEntry = Object.entries(CAT_LABEL).find(function(entry) { return entry[1] === data.category; });
     data.category = catEntry ? catEntry[0] : data.category;
     data.amount = data.amount === "" ? null : Number(data.amount);
     data.original_amount = data.amount;
@@ -165,21 +170,21 @@ async function saveTxn(data) {
   renderHistory();
   renderChart();
   try {
-    await fetch(`${API}/api/transactions`, {
+    await fetch(API + "/api/transactions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-  } catch { /* offline ok */ }
+  } catch (e) { /* offline ok */ }
 }
 
 async function updateTxn(id, data) {
-  const idx = txns.findIndex(t => t.id === id);
+  var idx = txns.findIndex(function(t) { return t.id === id; });
   if (idx === -1) return;
   data.id = id;
   data.created_at = txns[idx].created_at;
   if (data.split_with !== undefined) data.splits = parseSplit(data.split_with);
-  txns[idx] = { ...txns[idx], ...data };
+  txns[idx] = Object.assign({}, txns[idx], data);
   saveLocal("kotau_txns", txns);
   renderHistory();
   renderChart();
@@ -187,9 +192,9 @@ async function updateTxn(id, data) {
 }
 
 function markSplitPaid(txnId, name, paid) {
-  const t = txns.find(x => x.id === txnId);
+  var t = txns.find(function(x) { return x.id === txnId; });
   if (!t || !t.splits) return;
-  const s = t.splits.find(x => x.name === name);
+  var s = t.splits.find(function(x) { return x.name === name; });
   if (s) s.paid = paid;
   saveLocal("kotau_txns", txns);
   renderHistory();
@@ -198,170 +203,194 @@ function markSplitPaid(txnId, name, paid) {
 
 async function deleteTxn(id) {
   if (!confirm("刪除呢筆記錄？")) return;
-  txns = txns.filter(t => t.id !== id);
+  txns = txns.filter(function(t) { return t.id !== id; });
   saveLocal("kotau_txns", txns);
   renderHistory();
   renderChart();
   try {
-    await fetch(`${API}/api/transactions/${id}`, { method: "DELETE" });
-  } catch { /* offline ok */ }
+    await fetch(API + "/api/transactions/" + id, { method: "DELETE" });
+  } catch (e) { /* offline ok */ }
 }
 
 function titleOf(t) {
-  if (t.transaction_type === "transfer" && t.counterparty) return `轉界${t.counterparty}`;
-  if (t.transaction_type === "split" && t.counterparty) return `AA 界${t.counterparty}`;
+  if (t.transaction_type === "transfer" && t.counterparty) return "轉界" + t.counterparty;
+  if (t.transaction_type === "split" && t.counterparty) return "AA 界" + t.counterparty;
   return t.counterparty || t.merchant || t.purpose || CAT_LABEL[t.category] || "未命名";
 }
 
 function filteredTxns() {
   if (!searchTerm.trim()) return txns;
-  const q = searchTerm.toLowerCase();
-  return txns.filter(t => {
-    const hay = [
+  var q = searchTerm.toLowerCase();
+  return txns.filter(function(t) {
+    var hay = [
       t.amount, t.merchant, t.counterparty, t.purpose, t.channel, t.split_with,
       CAT_LABEL[t.category] || t.category, t.payment_method, t.raw_text, t.transaction_type
     ].filter(Boolean).join(" ").toLowerCase();
-    return hay.includes(q);
+    return hay.indexOf(q) !== -1;
   });
 }
 
 function getOwedSummary() {
-  const map = {};
-  txns.forEach(t => {
-    (t.splits || []).forEach(s => {
+  var map = {};
+  txns.forEach(function(t) {
+    (t.splits || []).forEach(function(s) {
       if (!s.name || s.amount == null) return;
       if (!map[s.name]) map[s.name] = { total: 0, unpaid: 0 };
       map[s.name].total += s.amount;
       if (!s.paid) map[s.name].unpaid += s.amount;
     });
   });
-  return Object.entries(map).map(([name, v]) => ({ name, ...v })).sort((a, b) => b.unpaid - a.unpaid);
+  return Object.keys(map).map(function(name) {
+    return { name: name, total: map[name].total, unpaid: map[name].unpaid };
+  }).sort(function(a, b) { return b.unpaid - a.unpaid; });
 }
 
 function renderHistory() {
-  const list = filteredTxns();
-  const countEl = $("#bookCount");
+  var list = filteredTxns();
+  var countEl = $("#bookCount");
   if (countEl) {
-    const base = txns.length ? `${txns.length} 筆` : "未有記錄";
-    countEl.textContent = searchTerm ? `${list.length} / ${base} 符合搜尋` : `${base}。入帳之後先會出現。`;
+    var base = txns.length ? (txns.length + " 筆") : "未有記錄";
+    countEl.textContent = searchTerm ? (list.length + " / " + base + " 符合搜尋") : (base + "。入帳之後先會出現。");
   }
-  const summary = getOwedSummary();
-  const summaryHtml = summary.length
-    ? `<div class="owed-summary"><b>邊個總共欠你</b>${summary.map(s => `<div class="owed-row"><span>${s.name}</span><span class="${s.unpaid > 0 ? "unpaid" : "paid"}">${s.unpaid > 0 ? `未還 ${s.unpaid.toFixed(0)}` : "已還清"}</span></div>`).join("")}</div>`
-    : "";
+  var summary = getOwedSummary();
+  var summaryHtml = "";
+  if (summary.length) {
+    summaryHtml = "<div class=\"owed-summary\"><b>邊個總共欠你</b>" +
+      summary.map(function(s) {
+        var status = s.unpaid > 0 ? "unpaid" : "paid";
+        var text = s.unpaid > 0 ? ("未還 " + s.unpaid.toFixed(0)) : "已還清";
+        return "<div class=\"owed-row\"><span>" + s.name + "</span><span class=\"" + status + "\">" + text + "</span></div>";
+      }).join("") +
+      "</div>";
+  }
   if (!list.length && !summary.length) {
-    bookList.innerHTML = `<p class="hint">${txns.length ? "冇符合搜尋嘅記錄。" : "未有記錄。講「今日搭車用咗 30 蚊」再擊入帳。"}</p>`;
+    bookList.innerHTML = "<p class=\"hint\">" + (txns.length ? "冇符合搜尋嘅記錄。" : "未有記錄。講「今日搭車用咗 30 蚊」再擊入帳。") + "</p>";
     return;
   }
-  bookList.innerHTML = summaryHtml + list.map(t => {
-    const where = [];
-    if (t.counterparty) where.push(`界${t.counterparty}`);
+  bookList.innerHTML = summaryHtml + list.map(function(t) {
+    var where = [];
+    if (t.counterparty) where.push("界" + t.counterparty);
     if (t.merchant) where.push(t.merchant);
     if (t.purpose) where.push(t.purpose);
-    const bits = [t.channel, t.payment_method, CAT_LABEL[t.category]].filter(Boolean);
-    const splits = t.splits || parseSplit(t.split_with);
-    const splitHtml = splits.length
-      ? `<div class="splits">${splits.map(s => `
-          <div class="split-item ${s.paid ? "paid" : "unpaid"}">
-            <span>${s.name}${s.amount != null ? ` 欠 ${s.amount}` : ""}</span>
-            <button type="button" class="mark-paid" data-txn="${t.id}" data-name="${s.name}" data-paid="${!s.paid}">${s.paid ? "已還" : "未還"}</button>
-          </div>`).join("")}</div>`
-      : "";
-    return `
-      <div class="row" data-id="${t.id}">
-        <div>
-          <b>${titleOf(t)}</b>
-          <small>${where.join(" · ") || bits[0] || ""}</small>
-          <small>${bits.join(" · ")}</small>
-          ${splitHtml}
-          <small class="raw">${(t.raw_text || "").slice(0, 60)}</small>
-        </div>
-        <div class="amt">${t.currency || "HKD"} ${t.amount ?? "—"}</div>
-        <button type="button" class="edit" data-edit="${t.id}" title="修改">✎</button>
-        <button type="button" class="del" data-del="${t.id}" title="刪除">✕</button>
-      </div>`;
+    var bits = [t.channel, t.payment_method, CAT_LABEL[t.category]].filter(Boolean);
+    var splits = t.splits || parseSplit(t.split_with);
+    var splitHtml = "";
+    if (splits.length) {
+      splitHtml = "<div class=\"splits\">" +
+        splits.map(function(s) {
+          var cls = s.paid ? "paid" : "unpaid";
+          var amt = s.amount != null ? (" 欠 " + s.amount) : "";
+          var btn = s.paid ? "已還" : "未還";
+          return "<div class=\"split-item " + cls + "\">" +
+            "<span>" + s.name + amt + "</span>" +
+            "<button type=\"button\" class=\"mark-paid\" data-txn=\"" + t.id + "\" data-name=\"" + s.name + "\" data-paid=\"" + (!s.paid) + "\">" + btn + "</button>" +
+            "</div>";
+        }).join("") +
+        "</div>";
+    }
+    return "<div class=\"row\" data-id=\"" + t.id + "\">" +
+      "<div>" +
+        "<b>" + titleOf(t) + "</b>" +
+        "<small>" + (where.join(" · ") || bits[0] || "") + "</small>" +
+        "<small>" + bits.join(" · ") + "</small>" +
+        splitHtml +
+        "<small class=\"raw\">" + (t.raw_text || "").slice(0, 60) + "</small>" +
+      "</div>" +
+      "<div class=\"amt\">" + (t.currency || "HKD") + " " + (t.amount ?? "—") + "</div>" +
+      "<button type=\"button\" class=\"edit\" data-edit=\"" + t.id + "\" title=\"修改\">✎</button>" +
+      "<button type=\"button\" class=\"del\" data-del=\"" + t.id + "\" title=\"刪除\">✕</button>" +
+      "</div>";
   }).join("");
-  bookList.querySelectorAll(".del").forEach(b => {
-    b.onclick = () => deleteTxn(b.dataset.del);
+  bookList.querySelectorAll(".del").forEach(function(b) {
+    b.onclick = function() { deleteTxn(b.dataset.del); };
   });
-  bookList.querySelectorAll(".edit").forEach(b => {
-    b.onclick = () => openEditSheet(b.dataset.edit);
+  bookList.querySelectorAll(".edit").forEach(function(b) {
+    b.onclick = function() { openEditSheet(b.dataset.edit); };
   });
-  bookList.querySelectorAll(".mark-paid").forEach(b => {
-    b.onclick = () => markSplitPaid(b.dataset.txn, b.dataset.name, b.dataset.paid === "true");
+  bookList.querySelectorAll(".mark-paid").forEach(function(b) {
+    b.onclick = function() { markSplitPaid(b.dataset.txn, b.dataset.name, b.dataset.paid === "true"); };
   });
 }
 
 function getAvailableMonths() {
-  const set = new Set();
-  txns.forEach(t => {
+  var set = {};
+  txns.forEach(function(t) {
     if (!t.created_at) return;
-    const d = new Date(t.created_at);
+    var d = new Date(t.created_at);
     if (isNaN(d)) return;
-    set.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+    var ym = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+    set[ym] = true;
   });
-  const now = new Date();
-  set.add(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
-  return Array.from(set).sort().reverse();
+  var now = new Date();
+  set[now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0")] = true;
+  return Object.keys(set).sort().reverse();
 }
 
 function monthTxns(ym) {
-  let y, m;
+  var y, m;
   if (!ym) {
-    const now = new Date();
+    var now = new Date();
     y = now.getFullYear();
     m = now.getMonth();
   } else {
-    [y, m] = ym.split("-").map(Number);
-    m -= 1;
+    var parts = ym.split("-");
+    y = Number(parts[0]);
+    m = Number(parts[1]) - 1;
   }
-  return txns.filter(t => {
-    const d = new Date(t.created_at || Date.now());
+  return txns.filter(function(t) {
+    var d = new Date(t.created_at || Date.now());
     return d.getFullYear() === y && d.getMonth() === m && t.transaction_type !== "refund";
   });
 }
 
 function renderChart() {
-  const months = getAvailableMonths();
-  const sel = $("#monthSelect");
+  var months = getAvailableMonths();
+  var sel = $("#monthSelect");
   if (sel) {
-    const cur = selectedMonth || months[0] || "";
-    sel.innerHTML = months.map(ym => `<option value="${ym}" ${ym === cur ? "selected" : ""}>${ym.replace("-", "年")} 月</option>`).join("");
+    var cur = selectedMonth || months[0] || "";
+    sel.innerHTML = months.map(function(ym) {
+      return "<option value=\"" + ym + "\" " + (ym === cur ? "selected" : "") + ">" + ym.replace("-", "年") + " 月</option>";
+    }).join("");
     if (!selectedMonth) selectedMonth = cur;
   }
-  const month = monthTxns(selectedMonth);
-  const spent = month.reduce((s, t) => s + Number(t.amount || 0), 0);
-  const pct = budget > 0 ? Math.min(100, (spent / budget) * 100) : 0;
+  var month = monthTxns(selectedMonth);
+  var spent = month.reduce(function(s, t) { return s + Number(t.amount || 0); }, 0);
+  var pct = budget > 0 ? Math.min(100, (spent / budget) * 100) : 0;
   $("#budgetInput").value = budget;
-  const bar = $("#budgetBar");
+  var bar = $("#budgetBar");
   bar.classList.toggle("over", spent > budget);
-  bar.firstElementChild.style.width = `${pct}%`;
-  $("#budgetText").textContent = `已用 HKD ${spent.toFixed(1)} / ${budget}（${pct.toFixed(0)}%）`;
-  const label = $("#chartMonth");
+  bar.firstElementChild.style.width = pct + "%";
+  $("#budgetText").textContent = "已用 HKD " + spent.toFixed(1) + " / " + budget + "（" + pct.toFixed(0) + "%）";
+  var label = $("#chartMonth");
   if (label) {
-    const [y, m] = (selectedMonth || "").split("-");
-    label.textContent = selectedMonth ? `${y}年${Number(m)}月 · ${month.length} 筆` : "本月";
+    var parts = (selectedMonth || "").split("-");
+    label.textContent = selectedMonth ? (parts[0] + "年" + Number(parts[1]) + "月 · " + month.length + " 筆") : "本月";
   }
-  const byCat = {};
-  CATS.forEach(c => { byCat[c] = 0; });
-  month.forEach(t => { byCat[t.category || "Others"] = (byCat[t.category || "Others"] || 0) + Number(t.amount || 0); });
-  const max = Math.max(1, ...Object.values(byCat));
-  $("#catBars").innerHTML = CATS.map(c => {
-    const v = byCat[c] || 0;
-    const w = Math.round((v / max) * 100);
-    const col = CAT_COLOR[c] || "#2a9d8f";
-    return `<div class="hbar"><span>${CAT_LABEL[c]}</span><div class="track"><span style="width:${w}%;background:${col}"></span></div><b>${v.toFixed(0)}</b></div>`;
+  var byCat = {};
+  CATS.forEach(function(c) { byCat[c] = 0; });
+  month.forEach(function(t) {
+    var c = t.category || "Others";
+    byCat[c] = (byCat[c] || 0) + Number(t.amount || 0);
+  });
+  var max = Math.max(1, ...Object.values(byCat));
+  $("#catBars").innerHTML = CATS.map(function(c) {
+    var v = byCat[c] || 0;
+    var w = Math.round((v / max) * 100);
+    var col = CAT_COLOR[c] || "#2a9d8f";
+    return "<div class=\"hbar\"><span>" + CAT_LABEL[c] + "</span><div class=\"track\"><span style=\"width:" + w + "%;background:" + col + "\"></span></div><b>" + v.toFixed(0) + "</b></div>";
   }).join("");
-  const legend = $("#legend");
+  var legend = $("#legend");
   if (legend) {
-    legend.innerHTML = CATS.map(c => `<span class="leg"><i style="background:${CAT_COLOR[c]}"></i>${CAT_LABEL[c]}</span>`).join("");
+    legend.innerHTML = CATS.map(function(c) {
+      return "<span class=\"leg\"><i style=\"background:" + CAT_COLOR[c] + "\"></i>" + CAT_LABEL[c] + "</span>";
+    }).join("");
   }
 }
 
 function openEditSheet(id) {
-  const t = txns.find(x => x.id === id);
+  var t = txns.find(function(x) { return x.id === id; });
   if (!t) return;
-  const sheet = $("#editSheet");
+  var sheet = $("#editSheet");
   if (!sheet) return;
   sheet.dataset.id = id;
   sheet.querySelector("[name=amount]").value = t.amount ?? "";
@@ -370,11 +399,13 @@ function openEditSheet(id) {
   sheet.querySelector("[name=counterparty]").value = t.counterparty || "";
   sheet.querySelector("[name=purpose]").value = t.purpose || "";
   sheet.querySelector("[name=channel]").value = t.channel || "未設定";
-  const catSel = sheet.querySelector("[name=category]");
-  catSel.innerHTML = CATS.map(c => `<option value="${c}" ${c === t.category ? "selected" : ""}>${CAT_LABEL[c]}</option>`).join("");
+  var catSel = sheet.querySelector("[name=category]");
+  catSel.innerHTML = CATS.map(function(c) {
+    return "<option value=\"" + c + "\" " + (c === t.category ? "selected" : "") + ">" + CAT_LABEL[c] + "</option>";
+  }).join("");
   sheet.querySelector("[name=payment_method]").value = t.payment_method || "Unknown";
   sheet.querySelector("[name=transaction_type]").value = t.transaction_type || "purchase";
-  const splitInput = sheet.querySelector("[name=split_with]");
+  var splitInput = sheet.querySelector("[name=split_with]");
   if (splitInput) splitInput.value = t.split_with || splitsToText(t.splits) || "";
   $("#editBack").hidden = false;
 }
@@ -385,22 +416,22 @@ async function send(text) {
   addMsg("user", text);
   input.value = "";
   chatHistory.push({ role: "user", content: text });
-  let payload = null;
+  var payload = null;
   try {
-    const r = await fetch(`${API}/api/chat`, {
+    var r = await fetch(API + "/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, history: chatHistory }),
+      body: JSON.stringify({ text: text, history: chatHistory }),
     });
     if (r.ok) payload = await r.json();
-  } catch { /* local */ }
+  } catch (e) { /* local */ }
   if (!payload) {
-    const ext = localExtract(text);
-    const expense = ext.amount != null || /蚊|界|食|搭|PayMe|FPS|八達通/.test(text);
+    var ext = localExtract(text);
+    var expense = ext.amount != null || /蚊|界|食|搭|PayMe|FPS|八達通/.test(text);
     payload = {
       reply: expense
         ? (ext.amount != null
-          ? `我估呢筆係 ${ext.currency} ${ext.amount}。核對用途同轉帳對象，哒先入帳。`
+          ? ("我估呢筆係 " + ext.currency + " " + ext.amount + "。核對用途同轉帳對象，哒先入帳。")
           : "呢句似記帳，但未見到金額。")
         : "可以講開支，或者去「圖表」睇本月分佈。喜好嘅右上角歪輪。",
       extraction: expense ? ext : null,
@@ -413,24 +444,24 @@ async function send(text) {
 }
 
 function localExtract(text) {
-  const out = {
+  var out = {
     raw_text: text, amount: null, currency: "HKD", merchant: null,
     category: "Others", payment_method: null, original_amount: null,
     discount_amount: 0, transaction_type: "purchase", amount_certainty: "unknown",
     counterparty: null, purpose: null, channel: null, split_with: null, splits: [],
     extractor: "rule_based_v0_js",
   };
-  const approx = /幾|左右|大概|約/.test(text);
-  let m = text.match(/(\d+)\s*蚊\s*(\d)/);
+  var approx = /幾|左右|大概|約/.test(text);
+  var m = text.match(/(\d+)\s*蚊\s*(\d)/);
   if (m) { out.amount = +m[1] + +m[2] / 10; out.amount_certainty = "exact"; }
   else if ((m = text.match(/(\d+(?:\.\d+)?)/))) {
     out.amount = +m[1];
     out.amount_certainty = /幾/.test(text) ? "approximate" : (approx ? "approximate" : "exact");
-    if (/幾/.test(text) && text.includes(m[1] + "幾")) out.amount = +m[1] + 5;
+    if (/幾/.test(text) && text.indexOf(m[1] + "幾") !== -1) out.amount = +m[1] + 5;
   } else if (/廿四蚊/.test(text)) { out.amount = 24; out.amount_certainty = "exact"; }
   else if (/三草/.test(text)) { out.amount = 30; out.amount_certainty = "exact"; }
 
-  const mer = [
+  var mer = [
     [/老麥|麥當勞/i, "McDonald's (老麥)", "Food & Dining"],
     [/黨鐵|港鐵|MTR/i, "港鐵", "Transport"],
     [/紅\s*van/i, "紅Van", "Transport"],
@@ -439,10 +470,12 @@ function localExtract(text) {
     [/的士|Taxi/i, "的士", "Transport"],
     [/茶記|茶餐廳/, "茶餐廳", "Food & Dining"],
   ];
-  for (const [re, name, cat] of mer) if (re.test(text)) {
-    out.merchant = name; out.category = cat;
-    if (cat === "Transport") out.channel = name;
-    break;
+  for (var i = 0; i < mer.length; i++) {
+    if (mer[i][0].test(text)) {
+      out.merchant = mer[i][1]; out.category = mer[i][2];
+      if (mer[i][2] === "Transport") out.channel = mer[i][1];
+      break;
+    }
   }
   if (/搭車/.test(text)) out.category = "Transport";
   if (/PayMe/i.test(text)) out.payment_method = "PayMe";
@@ -451,99 +484,106 @@ function localExtract(text) {
   else if (/界咗|現金/.test(text)) out.payment_method = "Cash";
   if (/轉|過咗|夾錢/.test(text)) out.transaction_type = "transfer";
   if (/AA|拆帳|欠/.test(text)) out.transaction_type = "split";
-  const who = text.match(/(?:界|比|過[咗左]?數?界)\s*([^\s，。]{1,8})/);
+  var who = text.match(/(?:界|比|過[咗左]?數?界)\s*([^\s，。]{1,8})/);
   if (who && !/咗|左|蚊/.test(who[1])) out.counterparty = who[1].replace(/夾錢|食飯/g, "");
   if (/夾錢/.test(text)) out.purpose = "夾錢";
   else if (/食/.test(text)) out.purpose = "食飯";
-  else if (/搭/.test(text)) out.purpose = out.channel ? `搭${out.channel}` : null;
+  else if (/搭/.test(text)) out.purpose = out.channel ? ("搭" + out.channel) : null;
   out.original_amount = out.amount;
   return out;
 }
 
 function showTab(id) {
-  document.querySelectorAll(".dock button").forEach(b => b.classList.toggle("active", b.dataset.tab === id));
-  document.querySelectorAll(".panel").forEach(p => p.classList.toggle("active", p.id === id));
+  document.querySelectorAll(".dock button").forEach(function(b) {
+    b.classList.toggle("active", b.dataset.tab === id);
+  });
+  document.querySelectorAll(".panel").forEach(function(p) {
+    p.classList.toggle("active", p.id === id);
+  });
   document.body.classList.toggle("desktop-chart", id === "chart");
   applyDualPane();
 }
 
 function applyDualPane() {
   document.body.classList.toggle("dual-pane", dualPane);
-  const histBtn = document.querySelector('.dock button[data-tab="history"]');
+  var histBtn = document.querySelector('.dock button[data-tab="history"]');
   if (histBtn) histBtn.style.display = dualPane ? "none" : "";
-  const dualBtn = $("#dualPaneBtn");
+  var dualBtn = $("#dualPaneBtn");
   if (dualBtn) dualBtn.textContent = dualPane ? "單頁" : "雙頁";
 }
 
-$("#dock").onclick = (e) => {
-  const b = e.target.closest("button");
+$("#dock").onclick = function(e) {
+  var b = e.target.closest("button");
   if (b) showTab(b.dataset.tab);
 };
-$("#composer").onsubmit = (e) => { e.preventDefault(); send(input.value); };
-$("#chips").onclick = (e) => { const b = e.target.closest("button"); if (b) send(b.dataset.q); };
-$("#budgetInput").onchange = () => {
+$("#composer").onsubmit = function(e) { e.preventDefault(); send(input.value); };
+$("#chips").onclick = function(e) {
+  var b = e.target.closest("button");
+  if (b) send(b.dataset.q);
+};
+$("#budgetInput").onchange = function() {
   budget = Number($("#budgetInput").value || 0);
   saveLocal("kotau_budget", budget);
   renderChart();
 };
-$("#micBtn").onclick = () => recordOrStop();
+$("#micBtn").onclick = function() { recordOrStop(); };
 
-let recorder = null;
-let chunks = [];
+var recorder = null;
+var chunks = [];
 
 async function recordOrStop() {
   if (recorder && recorder.state === "recording") {
     recorder.stop();
     return;
   }
-  if (!navigator.mediaDevices?.getUserMedia) {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     browserStt();
     return;
   }
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     chunks = [];
     recorder = new MediaRecorder(stream);
-    recorder.ondataavailable = (ev) => { if (ev.data.size) chunks.push(ev.data); };
-    recorder.onstop = async () => {
-      stream.getTracks().forEach(t => t.stop());
+    recorder.ondataavailable = function(ev) { if (ev.data.size) chunks.push(ev.data); };
+    recorder.onstop = async function() {
+      stream.getTracks().forEach(function(t) { t.stop(); });
       $("#micBtn").textContent = "🎤";
-      const blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
-      const text = await transcribeBlob(blob);
+      var blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
+      var text = await transcribeBlob(blob);
       if (text) send(text);
       else browserStt();
     };
     recorder.start();
     $("#micBtn").textContent = "⏹";
     addMsg("bot", "錄緊。再擊一次麥克風就停，交伴 SenseVoice。");
-  } catch {
+  } catch (e) {
     browserStt();
   }
 }
 
 async function transcribeBlob(blob) {
   try {
-    const body = new FormData();
+    var body = new FormData();
     body.append("file", blob, "speech.webm");
-    const r = await fetch(`${API}/api/transcribe`, { method: "POST", body });
+    var r = await fetch(API + "/api/transcribe", { method: "POST", body: body });
     if (!r.ok) return "";
-    const data = await r.json();
+    var data = await r.json();
     if (data.ok && data.text) {
-      addMsg("bot", `SenseVoice 聽到：${data.text}`);
+      addMsg("bot", "SenseVoice 聽到：" + data.text);
       return data.text;
     }
-  } catch { /* offline or no model */ }
+  } catch (e) { /* offline or no model */ }
   return "";
 }
 
 function browserStt() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) { addMsg("bot", "後端未裝 SenseVoice，瀏覽器又未支援語音。可以打字。"); return; }
   addMsg("bot", "SenseVoice 未開，暫時用瀏覽器語音。粵語可能被改成書面語。");
-  const rec = new SR();
+  var rec = new SR();
   rec.lang = "zh-HK";
-  rec.onresult = (ev) => { input.value = ev.results[0][0].transcript; send(input.value); };
-  rec.onerror = () => addMsg("bot", "聽唔到。試下再擊一次，或者打字。");
+  rec.onresult = function(ev) { input.value = ev.results[0][0].transcript; send(input.value); };
+  rec.onerror = function() { addMsg("bot", "聽唔到。試下再擊一次，或者打字。"); };
   rec.start();
 }
 
@@ -555,8 +595,8 @@ function openPrefs() {
 }
 
 $("#gearBtn").onclick = openPrefs;
-$("#prefClose").onclick = () => { $("#sheetBack").hidden = true; };
-$("#prefSheet").onsubmit = (e) => {
+$("#prefClose").onclick = function() { $("#sheetBack").hidden = true; };
+$("#prefSheet").onsubmit = function(e) {
   e.preventDefault();
   prefs = {
     transport: $("#prefTransport").value,
@@ -568,12 +608,13 @@ $("#prefSheet").onsubmit = (e) => {
   addMsg("bot", "喜好已儲存。");
 };
 
-$("#editClose").onclick = () => { $("#editBack").hidden = true; };
-$("#editForm").onsubmit = (e) => {
+$("#editClose").onclick = function() { $("#editBack").hidden = true; };
+$("#editForm").onsubmit = function(e) {
   e.preventDefault();
-  const sheet = $("#editSheet");
-  const id = sheet.dataset.id;
-  const data = Object.fromEntries([...sheet.querySelectorAll("input,select")].map(el => [el.name, el.value]));
+  var sheet = $("#editSheet");
+  var id = sheet.dataset.id;
+  var data = {};
+  sheet.querySelectorAll("input,select").forEach(function(el) { data[el.name] = el.value; });
   data.amount = data.amount === "" ? null : Number(data.amount);
   data.channel = data.channel === "未設定" ? null : data.channel;
   data.splits = parseSplit(data.split_with);
@@ -582,25 +623,25 @@ $("#editForm").onsubmit = (e) => {
   $("#editBack").hidden = true;
 };
 
-const searchInput = $("#searchInput");
+var searchInput = $("#searchInput");
 if (searchInput) {
-  searchInput.oninput = () => {
+  searchInput.oninput = function() {
     searchTerm = searchInput.value;
     renderHistory();
   };
 }
 
-const monthSelect = $("#monthSelect");
+var monthSelect = $("#monthSelect");
 if (monthSelect) {
-  monthSelect.onchange = () => {
+  monthSelect.onchange = function() {
     selectedMonth = monthSelect.value;
     renderChart();
   };
 }
 
-const dualBtn = $("#dualPaneBtn");
+var dualBtn = $("#dualPaneBtn");
 if (dualBtn) {
-  dualBtn.onclick = () => {
+  dualBtn.onclick = function() {
     if (!dualPane) {
       if (!confirm("切換去雙頁查看？底欄嘅「歷史」會隱藏，左邊對話、右邊歷史一齊出現。")) return;
       dualPane = true;
@@ -613,28 +654,31 @@ if (dualBtn) {
   };
 }
 
-const exportBtn = $("#exportBtn");
+var exportBtn = $("#exportBtn");
 if (exportBtn) {
-  exportBtn.onclick = () => {
+  exportBtn.onclick = function() {
     if (!txns.length) return addMsg("bot", "未有記錄可以匯出。");
-    const headers = ["日期", "金額", "貨幣", "商戶", "界邊個", "用途", "類別", "支付", "AA拆帳", "原文"];
-    const rows = txns.map(t => [
-      t.created_at ? new Date(t.created_at).toLocaleString("zh-HK") : "",
-      t.amount ?? "", t.currency || "HKD", t.merchant || "", t.counterparty || "",
-      t.purpose || "", CAT_LABEL[t.category] || t.category, t.payment_method || "", t.split_with || "", t.raw_text || ""
-    ]);
-    const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
-    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
-    const a = document.createElement("a");
+    var headers = ["日期", "金額", "貨幣", "商戶", "界邊個", "用途", "類別", "支付", "AA拆帳", "原文"];
+    var rows = txns.map(function(t) {
+      return [
+        t.created_at ? new Date(t.created_at).toLocaleString("zh-HK") : "",
+        t.amount ?? "", t.currency || "HKD", t.merchant || "", t.counterparty || "",
+        t.purpose || "", CAT_LABEL[t.category] || t.category, t.payment_method || "", t.split_with || "", t.raw_text || ""
+      ];
+    });
+    var csv = [headers].concat(rows).map(function(r) {
+      return r.map(function(c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(",");
+    }).join("\n");
+    var blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+    var a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `kotau_${new Date().toISOString().slice(0,10)}.csv`;
+    a.download = "kotau_" + new Date().toISOString().slice(0, 10) + ".csv";
     a.click();
     URL.revokeObjectURL(a.href);
     addMsg("bot", "已匯出 CSV。");
   };
 }
 
-// init
 applyDualPane();
 renderHistory();
 renderChart();
