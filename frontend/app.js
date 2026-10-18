@@ -124,7 +124,7 @@ function addCard(ext) {
       "<label>金額 <input name=\"amount\" type=\"number\" step=\"0.1\" value=\"" + (ext.amount ?? "") + "\"></label>" +
       "<label>貨幣 <input name=\"currency\" value=\"" + (ext.currency || "HKD") + "\"></label>" +
       "<label>商戶／公司 <input name=\"merchant\" value=\"" + (ext.merchant || "") + "\" placeholder=\"例如：老麥\"></label>" +
-      "<label>界邊個／AA對象 <input name=\"counterparty\" value=\"" + (ext.counterparty || "") + "\" placeholder=\"阿明、小明\"></label>" +
+      "<label>畀邊個／AA對象 <input name=\"counterparty\" value=\"" + (ext.counterparty || "") + "\" placeholder=\"阿明、小明\"></label>" +
       "<label>做咩用 <input name=\"purpose\" value=\"" + (ext.purpose || "") + "\" placeholder=\"搭車返工、食飯\"></label>" +
       "<label>交通／渠道 <select name=\"channel\">" + channelOpts + "</select></label>" +
       "<label>類別 <select name=\"category\">" + catOpts + "</select></label>" +
@@ -157,7 +157,7 @@ function addCard(ext) {
     data.amount_certainty = ext.amount_certainty || "exact";
     await saveTxn(data);
     wrap.remove();
-    addMsg("bot", "入咗帳。去下面「歷史」睇界咗邊個、做咩用。");
+    addMsg("bot", "入咗帳。去下面「歷史」睇畀咗邊個、做咩用。");
   };
 }
 
@@ -213,8 +213,8 @@ async function deleteTxn(id) {
 }
 
 function titleOf(t) {
-  if (t.transaction_type === "transfer" && t.counterparty) return "轉界" + t.counterparty;
-  if (t.transaction_type === "split" && t.counterparty) return "AA 界" + t.counterparty;
+  if (t.transaction_type === "transfer" && t.counterparty) return "轉畀" + t.counterparty;
+  if (t.transaction_type === "split" && t.counterparty) return "AA 畀" + t.counterparty;
   return t.counterparty || t.merchant || t.purpose || CAT_LABEL[t.category] || "未命名";
 }
 
@@ -269,7 +269,7 @@ function renderHistory() {
   }
   bookList.innerHTML = summaryHtml + list.map(function(t) {
     var where = [];
-    if (t.counterparty) where.push("界" + t.counterparty);
+    if (t.counterparty) where.push("畀" + t.counterparty);
     if (t.merchant) where.push(t.merchant);
     if (t.purpose) where.push(t.purpose);
     var bits = [t.channel, t.payment_method, CAT_LABEL[t.category]].filter(Boolean);
@@ -661,7 +661,7 @@ var exportBtn = $("#exportBtn");
 if (exportBtn) {
   exportBtn.onclick = function() {
     if (!txns.length) return addMsg("bot", "未有記錄可以匯出。");
-    var headers = ["日期", "金額", "貨幣", "商戶", "界邊個", "用途", "類別", "支付", "AA拆帳", "原文"];
+    var headers = ["日期", "金額", "貨幣", "商戶", "畀邊個", "用途", "類別", "支付", "AA拆帳", "原文"];
     var rows = txns.map(function(t) {
       return [
         t.created_at ? new Date(t.created_at).toLocaleString("zh-HK") : "",
