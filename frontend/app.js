@@ -214,9 +214,11 @@ async function updateTxn(id, data) {
 
 function markSplitPaid(txnId, name, paid) {
   var t = txns.find(function(x) { return x.id === txnId; });
-  if (!t || !t.splits) return;
+  if (!t) return;
+  if (!t.splits) t.splits = parseSplit(t.split_with);
   var s = t.splits.find(function(x) { return x.name === name; });
   if (s) s.paid = paid;
+  else t.splits.push({ name: name, amount: null, paid: paid });
   saveLocal("kotau_txns", txns);
   renderHistory();
   renderChart();
@@ -321,7 +323,7 @@ function renderHistory() {
     summaryHtml = "<div class=\"owed-summary\"><b>邊個總共欠你</b>" +
       summary.map(function(s) {
         var status = s.unpaid > 0 ? "unpaid" : "paid";
-        var text = s.unpaid > 0 ? ("未還 " + s.unpaid.toFixed(0)) : "已還清";
+        var text = s.unpaid > 0 ? ("未還 " + s.unpaid.toFixed(0) + " / 共 " + s.total.toFixed(0)) : ("已還清 " + s.total.toFixed(0));
         return "<div class=\"owed-row\"><span>" + s.name + "</span><span class=\"" + status + "\">" + text + "</span></div>";
       }).join("") +
       "</div>";
@@ -346,7 +348,13 @@ function renderHistory() {
     if (t.merchant) where.push(t.merchant);
     if (t.purpose) where.push(t.purpose);
     var bits = [t.channel, t.payment_method, CAT_LABEL[t.category]].filter(Boolean);
-    var splits = parseSplit(t.split_with) || t.splits || [];
+    var parsed = parseSplit(t.split_with);
+    var splits = parsed.map(function(s) {
+      var existing = (t.splits || []).find(function(x) { return x.name === s.name; });
+      if (existing) s.paid = existing.paid;
+      return s;
+    });
+    if (!splits.length) splits = t.splits || [];
     var splitHtml = "";
     if (splits.length) {
       splitHtml = "<div class=\"splits\">" +
