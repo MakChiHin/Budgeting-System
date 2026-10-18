@@ -8,6 +8,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from extractor import extract
+try:
+    from supabase_client import supabase_admin
+except ImportError:
+    supabase_admin = None
 
 load_dotenv()
 ROOT = Path(__file__).resolve().parents[1]
@@ -163,6 +167,19 @@ def add_txn(body: TxnIn):
     item["created_at"] = datetime.now(timezone.utc).isoformat()
     rows.insert(0, item)
     _save_txns(rows)
+    if supabase_admin:
+        try:
+            sb_data = {
+                "id": item["id"],
+                "amount": item.get("amount"),
+                "currency": item.get("currency", "HKD"),
+                "merchant": item.get("merchant"),
+                "raw_text": item.get("raw_text"),
+                "transaction_date": item["created_at"],
+            }
+            supabase_admin.table("transactions").insert(sb_data).execute()
+        except Exception as e:
+            print(f"Supabase sync failed: {e}")
     return item
 
 
