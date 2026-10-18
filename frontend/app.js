@@ -62,6 +62,8 @@ let dualPane = loadLocal("kotau_dual_pane", false);
 let chatHistory = [];
 let searchTerm = "";
 let selectedMonth = "";
+let lastDeleted = null;
+let lastPrefs = loadLocal("kotau_last_prefs", {});
 
 function addMsg(role, text) {
   const div = document.createElement("div");
@@ -72,6 +74,8 @@ function addMsg(role, text) {
 }
 
 function applyPrefs(ext) {
+  if (lastPrefs.payment_method && !ext.payment_method) ext.payment_method = lastPrefs.payment_method;
+  if (lastPrefs.category && !ext.category) ext.category = lastPrefs.category;
   const notes = [];
   const ride = /搭車|搭巴士|返工車|交通/.test(ext.raw_text || "") || ext.category === "Transport";
   if (ride && !ext.channel && prefs.transport && prefs.transport !== "未設定") {
@@ -164,7 +168,15 @@ function addCard(ext) {
     data.split_with = splitsToText(data.splits);
     data.raw_text = ext.raw_text || "";
     data.amount_certainty = ext.amount_certainty || "exact";
+    if (data.splits.length && data.amount) {
+      var splitSum = data.splits.reduce(function(s, x) { return s + (x.amount || 0); }, 0);
+      if (Math.abs(splitSum - data.amount) > 0.01) {
+        addMsg("bot", "提示：拆帳總共 " + splitSum.toFixed(0) + "，同總額 " + data.amount + " 差 " + (data.amount - splitSum).toFixed(0) + "。");
+      }
+    }
     await saveTxn(data);
+    lastPrefs = { payment_method: data.payment_method, category: data.category };
+    saveLocal("kotau_last_prefs", lastPrefs);
     wrap.remove();
     addMsg("bot", "入咗帳。去下面「歷史」睇畀咗邊個、做咩用。");
   };
@@ -212,13 +224,48 @@ function markSplitPaid(txnId, name, paid) {
 
 async function deleteTxn(id) {
   if (!confirm("刪除呢筆記錄？")) return;
+  var idx = txns.findIndex(function(t) { return t.id === id; });
+  if (idx === -1) return;
+  lastDeleted = txns[idx];
   txns = txns.filter(function(t) { return t.id !== id; });
   saveLocal("kotau_txns", txns);
   renderHistory();
   renderChart();
+  addMsg("bot", "已刪除。5 秒內可以還原。");
+  setTimeout(function() {
+    var undoBtn = document.querySelector(".undo-btn");
+    if (undoBtn) undoBtn.remove();
+  }, 5000);
+  var undoDiv = document.createElement("div");
+  undoDiv.className = "msg bot";
+  undoDiv.innerHTML = "已刪除。 <button type=\"button\" class=\"undo-btn\" style=\"margin-left:8px;padding:2px 8px;border-radius:4px;border:1px solid #2a9d8f;background:#fff;color:#2a9d8f;cursor:pointer\">還原</button>";
+  undoDiv.querySelector(".undo-btn").onclick = function() {
+    if (lastDeleted) {
+      txns.unshift(lastDeleted);
+      saveLocal("kotau_txns", txns);
+      renderHistory();
+      renderChart();
+      addMsg("bot", "已還原。");
+      lastDeleted = null;
+    }
+    undoDiv.remove();
+  };
+  chatLog.appendChild(undoDiv);
+  chatLog.scrollTop = chatLog.scrollHeight;
   try {
     await fetch(API + "/api/transactions/" + id, { method: "DELETE" });
   } catch (e) { /* offline ok */ }
+}
+
+function relativeDate(iso) {
+  if (!iso) return "";
+  var d = new Date(iso);
+  var now = new Date();
+  var diff = Math.floor((now - d) / 86400000);
+  if (diff === 0) return "今日";
+  if (diff === 1) return "昨日";
+  if (diff < 7) return diff + " 日前";
+  return (d.getMonth()+1) + "/" + d.getDate();
 }
 
 function titleOf(t) {
@@ -238,6 +285,13 @@ function filteredTxns() {
     return hay.indexOf(q) !== -1;
   });
 }
+
+function highlight(text, term) {
+  if (!term || !text) return text || "";
+  var re = new RegExp("(" + term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "gi");
+  return String(text).replace(re, "<mark>$1</mark>");
+}
+
 
 function getOwedSummary() {
   var map = {};
@@ -273,7 +327,17 @@ function renderHistory() {
       "</div>";
   }
   if (!list.length && !summary.length) {
-    bookList.innerHTML = "<p class=\"hint\">" + (txns.length ? "冇符合搜尋嘅記錄。" : "未有記錄。講「今日搭車用咗 30 蚊」再擊入帳。") + "</p>";
+    if (!txns.length) {
+      bookList.innerHTML = "<p class=\"hint\">未有記錄。</p><div style=\"display:flex;gap:8px;flex-wrap:wrap;margin-top:8px\">" +
+        "<button type=\"button\" class=\"chip-ex\" data-q=\"今日搭車用咗 30 蚊\">試下：搭車 30 蚊</button>" +
+        "<button type=\"button\" class=\"chip-ex\" data-q=\"老麥食咗個餐 45 蚊\">試下：老麥 45 蚊</button>" +
+        "</div>";
+      bookList.querySelectorAll(".chip-ex").forEach(function(b) {
+        b.onclick = function() { send(b.dataset.q); };
+      });
+    } else {
+      bookList.innerHTML = "<p class=\"hint\">冇符合搜尋嘅記錄。</p>";
+    }
     return;
   }
   bookList.innerHTML = summaryHtml + list.map(function(t) {
@@ -299,13 +363,15 @@ function renderHistory() {
     }
     return "<div class=\"row\" data-id=\"" + t.id + "\">" +
       "<div>" +
-        "<b>" + titleOf(t) + "</b>" +
+        "<b>" + highlight(titleOf(t), searchTerm) + "</b>" +
+        "<small style=\"color:#888\">" + relativeDate(t.created_at) + "</small>" +
         "<small>" + (where.join(" · ") || bits[0] || "") + "</small>" +
         "<small>" + bits.join(" · ") + "</small>" +
         splitHtml +
         "<small class=\"raw\">" + (t.raw_text || "").slice(0, 60) + "</small>" +
       "</div>" +
       "<div class=\"amt\">" + (t.currency || "HKD") + " " + (t.amount ?? "—") + "</div>" +
+      "<button type=\"button\" class=\"dup\" data-dup=\"" + t.id + "\" title=\"再記一筆\">＋</button>" +
       "<button type=\"button\" class=\"edit\" data-edit=\"" + t.id + "\" title=\"修改\">✎</button>" +
       "<button type=\"button\" class=\"del\" data-del=\"" + t.id + "\" title=\"刪除\">✕</button>" +
       "</div>";
@@ -316,8 +382,34 @@ function renderHistory() {
   bookList.querySelectorAll(".edit").forEach(function(b) {
     b.onclick = function() { openEditSheet(b.dataset.edit); };
   });
+  bookList.querySelectorAll(".dup").forEach(function(b) {
+    b.onclick = function() {
+      var t = txns.find(function(x) { return x.id === b.dataset.dup; });
+      if (!t) return;
+      var copy = Object.assign({}, t);
+      delete copy.id;
+      copy.created_at = new Date().toISOString();
+      copy.raw_text = (t.raw_text || "") + "（複製）";
+      saveTxn(copy);
+      addMsg("bot", "已複製一筆。");
+    };
+  });
   bookList.querySelectorAll(".mark-paid").forEach(function(b) {
     b.onclick = function() { markSplitPaid(b.dataset.txn, b.dataset.name, b.dataset.paid === "true"); };
+  });
+  bookList.querySelectorAll(".row").forEach(function(row) {
+    var startX = 0;
+    row.addEventListener("touchstart", function(e) { startX = e.touches[0].clientX; }, {passive: true});
+    row.addEventListener("touchend", function(e) {
+      var dx = e.changedTouches[0].clientX - startX;
+      if (Math.abs(dx) < 60) return;
+      var id = row.dataset.id;
+      if (dx < 0) {
+        if (confirm("刪除呢筆？")) deleteTxn(id);
+      } else {
+        openEditSheet(id);
+      }
+    }, {passive: true});
   });
 }
 
@@ -370,6 +462,20 @@ function renderChart() {
   bar.classList.toggle("over", spent > budget);
   bar.firstElementChild.style.width = pct + "%";
   $("#budgetText").textContent = "已用 HKD " + spent.toFixed(1) + " / " + budget + "（" + pct.toFixed(0) + "%）";
+  if (spent > budget && budget > 0) {
+    var over = spent - budget;
+    if (!$("#budgetAlert")) {
+      var alert = document.createElement("p");
+      alert.id = "budgetAlert";
+      alert.className = "hint";
+      alert.style.color = "#e76f51";
+      alert.textContent = "已超支 HKD " + over.toFixed(0);
+      $("#budgetText").after(alert);
+    }
+  } else {
+    var existing = $("#budgetAlert");
+    if (existing) existing.remove();
+  }
   var label = $("#chartMonth");
   if (label) {
     var parts = (selectedMonth || "").split("-");
@@ -402,6 +508,26 @@ function openEditSheet(id) {
   var sheet = $("#editSheet");
   if (!sheet) return;
   sheet.dataset.id = id;
+  var moreBtn = sheet.querySelector(".more-fields-btn");
+  if (!moreBtn) {
+    moreBtn = document.createElement("button");
+    moreBtn.type = "button";
+    moreBtn.className = "more-fields-btn";
+    moreBtn.textContent = "更多選項";
+    moreBtn.style.cssText = "grid-column:1/-1;margin:8px 0;padding:6px;border:1px solid #ddd;border-radius:6px;background:#f5f5f5;cursor:pointer";
+    moreBtn.onclick = function() {
+      var extras = sheet.querySelectorAll(".extra-field");
+      var show = extras[0] && extras[0].style.display === "none";
+      extras.forEach(function(el) { el.style.display = show ? "" : "none"; });
+      moreBtn.textContent = show ? "收起" : "更多選項";
+    };
+    sheet.appendChild(moreBtn);
+  }
+  var channelLabel = sheet.querySelector("[name=channel]").closest("label");
+  var typeLabel = sheet.querySelector("[name=transaction_type]").closest("label");
+  if (channelLabel) channelLabel.classList.add("extra-field");
+  if (typeLabel) typeLabel.classList.add("extra-field");
+  sheet.querySelectorAll(".extra-field").forEach(function(el) { el.style.display = "none"; });
   sheet.querySelector("[name=amount]").value = t.amount ?? "";
   sheet.querySelector("[name=currency]").value = t.currency || "HKD";
   sheet.querySelector("[name=merchant]").value = t.merchant || "";
