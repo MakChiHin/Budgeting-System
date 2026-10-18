@@ -234,3 +234,10 @@ html, body {
   body.dual-pane.desktop-chart .panel#history { display: none !important; }
   body.dual-pane.desktop-chart .panel#chart { display: flex !important; flex: 1; }
 }
+
+/* UX improvements */
+.chip-ex { padding: 6px 12px; border-radius: 16px; border: 1px solid #2a9d8f; background: #fff; color: #2a9d8f; cursor: pointer; font-size: 13px; }
+.chip-ex:hover { background: #2a9d8f; color: #fff; }
+mark { background: #fff3cd; padding: 0 2px; border-radius: 2px; }
+.extra-field { }
+.undo-btn:hover { background: #2a9d8f !important; color: #fff !important; }
