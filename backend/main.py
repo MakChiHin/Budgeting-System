@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from extractor import extract
+from ai_model import ask_cantonese_ai
 try:
     from supabase_client import supabase_admin
 except ImportError:
@@ -80,6 +81,7 @@ def _sensevoice_ready() -> bool:
 def health():
     cfg = _config()
     key = bool(os.getenv("DEEPSEEK_API_KEY"))
+    hf_key = bool(os.getenv("HF_TOKEN"))  # 新增健康檢查項
     return {
         "ok": True,
         "ner": cfg.get("ner_runtime_now", "rule_based_v0"),
@@ -138,6 +140,36 @@ def _transcribe(data: bytes, filename: str):
 def api_extract(body: TextIn):
     return extract(body.text)
 
+# === 【核心修改】讓網頁聊天時完美接入你的 Hugging Face Qwen 廣東話模型 ===
+@app.post("/api/chat")
+async def api_chat(body: ChatIn):
+    # 1. 依然保留原有的局部 NER 規則提取（以便右上角規則引擎開關與卡片功能正常運作）
+    parsed = extract(body.text)
+    looks_like_expense = parsed.get("amount") is not None or any(
+        w in body.text for w in ("蚊", "畀", "食", "搭", "PayMe", "FPS", "八達通")
+    )
+    
+    # 2. 優先呼叫你的 Qwen 2.5 廣東話專用賬單模型來生成充滿本土人情味的回覆
+    if os.getenv("HF_TOKEN"):
+        try:
+            reply = await ask_cantonese_ai(body.text)
+        except Exception as exc:
+            # 如果 Hugging Face 崩潰或超時，安全降級回原本的 DeepSeek 或本地回覆
+            if os.getenv("DEEPSEEK_API_KEY"):
+                reply = await _deepseek_reply(body.text, body.history)
+            else:
+                reply = _local_reply(body.text, parsed, looks_like_expense) + f"\n(HF error: {exc.__class__.__name__})"
+    
+    # 3. 如果未設定 HF_TOKEN，則維持系統原先的 DeepSeek / 規則引擎邏輯
+    else:
+        reply = _local_reply(body.text, parsed, looks_like_expense)
+        if os.getenv("DEEPSEEK_API_KEY") and not looks_like_expense:
+            try:
+                reply = await _deepseek_reply(body.text, body.history)
+            except Exception as exc:
+                reply = _local_reply(body.text, parsed, looks_like_expense) + f"\n(DeepSeek error: {exc.__class__.__name__})"
+                
+    return {"reply": reply, "extraction": parsed if looks_like_expense else None}
 
 @app.post("/api/chat")
 async def api_chat(body: ChatIn):
