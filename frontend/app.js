@@ -892,3 +892,68 @@ applyDualPane();
 renderHistory();
 renderChart();
 addMsg("bot", "你好。講「今日搭車用咗 30 蚊」，如果右上角喜好設咗港鐵，確認卡會預填交通工具同用途。擊入帳之後先出現嘅「歷史」。");
+
+// Text size
+(function() {
+  var slider = document.getElementById("sizeSlider");
+  var preview = document.getElementById("sizePreview");
+  if (!slider) return;
+  function apply(v) {
+    document.documentElement.style.fontSize = v + "px";
+    if (preview) preview.style.fontSize = v + "px";
+    localStorage.setItem("kotau_font", v);
+  }
+  slider.oninput = function() { apply(slider.value); };
+  var down = document.getElementById("sizeDown");
+  var up = document.getElementById("sizeUp");
+  if (down) down.onclick = function() { slider.value = Math.max(13, +slider.value - 1); apply(slider.value); };
+  if (up) up.onclick = function() { slider.value = Math.min(20, +slider.value + 1); apply(slider.value); };
+  var saved = localStorage.getItem("kotau_font");
+  if (saved) { slider.value = saved; apply(saved); }
+})();
+
+// Home pie + recent
+function renderHome() {
+  var month = monthTxns(selectedMonth);
+  var total = month.reduce(function(s, t) { return s + Number(t.amount || 0); }, 0);
+  var el = document.getElementById("monthTotal");
+  if (el) el.textContent = total.toFixed(0);
+  var catMap = {};
+  month.forEach(function(t) {
+    var c = t.category || "Others";
+    catMap[c] = (catMap[c] || 0) + Number(t.amount || 0);
+  });
+  var data = Object.keys(catMap).map(function(c) { return { name: CAT_LABEL[c] || c, value: catMap[c], color: CAT_COLOR[c] || "#999" }; });
+  var sum = data.reduce(function(s, d) { return s + d.value; }, 0) || 1;
+  var svg = document.getElementById("pieSvg");
+  var legend = document.getElementById("pieLegend");
+  if (svg && data.length) {
+    var acc = 0, r = 70, cx = 80, cy = 80, paths = "";
+    data.forEach(function(d) {
+      var a1 = (acc / sum) * Math.PI * 2 - Math.PI / 2;
+      acc += d.value;
+      var a2 = (acc / sum) * Math.PI * 2 - Math.PI / 2;
+      var large = (a2 - a1) > Math.PI ? 1 : 0;
+      var x1 = cx + r * Math.cos(a1), y1 = cy + r * Math.sin(a1);
+      var x2 = cx + r * Math.cos(a2), y2 = cy + r * Math.sin(a2);
+      paths += '<path d="M' + cx + ',' + cy + ' L' + x1 + ',' + y1 + ' A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2 + ' Z" fill="' + d.color + '"/>';
+    });
+    svg.innerHTML = paths;
+    if (legend) legend.innerHTML = data.map(function(d) { return '<span><i style="background:' + d.color + '"></i>' + d.name + ' ' + (d.value/sum*100).toFixed(0) + '%</span>'; }).join("");
+  }
+  var recent = document.getElementById("recentList");
+  if (recent) recent.innerHTML = month.slice(0, 5).map(function(t) {
+    return '<div class="row"><div><b>' + titleOf(t) + '</b><small>' + (t.payment_method || "") + ' · ' + (CAT_LABEL[t.category] || "") + '</small><small>' + relativeDate(t.created_at) + '</small></div><div class="amt">HKD ' + (t.amount || 0) + '</div></div>';
+  }).join("") || '<p class="hint" style="padding:16px">未有記錄。</p>';
+  var tips = document.getElementById("tipsList");
+  if (tips) {
+    var tipsHtml = "";
+    if (total > budget) tipsHtml += '<div class="tip">本月已超支，建議先檢視大額項目。</div>';
+    if ((catMap["Food & Dining"] || 0) > total * 0.3) tipsHtml += '<div class="tip">飲食佔比較高，可考慮多喺屋企煮。</div>';
+    if (!tipsHtml) tipsHtml = '<div class="tip">開支正常，繼續保持。</div>';
+    tips.innerHTML = tipsHtml;
+  }
+}
+var origRender = renderChart;
+renderChart = function() { origRender(); renderHome(); };
+renderHome();
