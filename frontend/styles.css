@@ -241,3 +241,11 @@ html, body {
 mark { background: #fff3cd; padding: 0 2px; border-radius: 2px; }
 .extra-field { }
 .undo-btn:hover { background: #2a9d8f !important; color: #fff !important; }
+
+.pie-svg { width: 160px; height: 160px; margin: 8px auto; display: block; }
+.legend-inline { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 16px 12px; font-size: 12px; justify-content: center; }
+.legend-inline span { display: flex; align-items: center; gap: 4px; }
+.legend-inline i { width: 10px; height: 10px; border-radius: 50%; }
+.tip { background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--teal); border-radius: 10px; padding: 12px; margin: 8px 16px; }
+.size-ctrl { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
+.size-ctrl button { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); background: #fff; cursor: pointer; }
