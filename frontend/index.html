@@ -6,7 +6,7 @@
   <title>口頭帳 — 理財助手</title>
   <meta name="theme-color" content="#1b3a4b" />
   <link rel="manifest" href="./manifest.json" />
-  <link rel="stylesheet" href="./styles.css?v=31" />
+  <link rel="stylesheet" href="./styles.css?v=32" />
 </head>
 <body>
   <div class="app">
@@ -24,7 +24,17 @@
     </header>
 
     <main class="workspace">
-      <section class="panel active" id="chat">
+      <section class="panel active" id="home">
+        <div class="pane-head"><h2>本月消費</h2><p>$<span id="monthTotal">0</span></p></div>
+        <svg class="pie-svg" id="pieSvg" viewBox="0 0 160 160"></svg>
+        <div class="legend-inline" id="pieLegend"></div>
+        <div class="list" id="recentList"></div>
+      </section>
+      <section class="panel" id="tips">
+        <div class="pane-head"><h2>慳錢建議</h2><p>根據本月開支。</p></div>
+        <div id="tipsList"></div>
+      </section>
+      <section class="panel" id="chat">
         <div class="chat" id="chatLog"></div>
         <div class="chips" id="chips">
           <button data-q="頭先嘅老麥食咗個餐界咗四十幾蚊">老麥四十幾蚊</button>
@@ -71,14 +81,24 @@
     </main>
 
     <nav class="dock" id="dock">
-      <button class="active" data-tab="chat">對話</button>
-      <button data-tab="history">歷史</button>
-      <button data-tab="chart">圖表</button>
+      <button class="active" data-tab="home">主頁</button>
+      <button data-tab="tips">慳錢建議</button>
+      <button data-tab="chart">統計報告</button>
+      <button data-tab="chat">新增紀錄</button>
+      <button data-tab="history">歷史紀錄</button>
     </nav>
 
     <div class="sheet-back" id="sheetBack" hidden>
       <form class="sheet" id="prefSheet">
-        <h2>喜好</h2>
+        <h2>喜好設定</h2>
+        <label>文字大小
+          <div class="size-ctrl">
+            <button type="button" id="sizeDown">A−</button>
+            <input type="range" id="sizeSlider" min="13" max="20" value="15" style="flex:1" />
+            <button type="button" id="sizeUp">A+</button>
+          </div>
+          <div id="sizePreview" style="margin-top:6px;padding:8px;background:#fff;border:1px solid var(--line);border-radius:8px">預覽：今日搭車用咗 30 蚊</div>
+        </label>
         <p class="hint">冇講清楚嘅句子，會用呢度預填。確認卡仍然可以改，擊入帳先寫入歷史。</p>
         <label>搭車通常用
           <select name="transport" id="prefTransport">
@@ -193,6 +213,6 @@
       </form>
     </div>
   </div>
-  <script src="./app.js?v=31"></script>
+  <script src="./app.js?v=32"></script>
 </body>
 </html>
