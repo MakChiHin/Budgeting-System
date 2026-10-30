@@ -728,6 +728,10 @@ function localExtract(text) {
 }
 
 function showTab(id) {
+  if (dualPane && id !== "chat" && id !== "history") {
+    dualPane = false;
+    saveLocal("kotau_dual_pane", false);
+  }
   document.querySelectorAll(".dock button").forEach(function(b) {
     b.classList.toggle("active", b.dataset.tab === id);
   });
