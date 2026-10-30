@@ -199,13 +199,20 @@ def add_txn(body: TxnIn):
     item["created_at"] = datetime.now(timezone.utc).isoformat()
     rows.insert(0, item)
     _save_txns(rows)
-    # Supabase sync disabled until login system is ready
-    # if supabase_admin:
-    #     try:
-    #         sb_data = {...}
-    #         supabase_admin.table("transactions").insert(sb_data).execute()
-    #     except Exception as e:
-    #         print(f"Supabase sync failed: {e}")
+    if supabase_admin and item.get("user_id"):
+        try:
+            sb_data = {
+                "id": item["id"],
+                "user_id": item["user_id"],
+                "amount": item.get("amount"),
+                "currency": item.get("currency", "HKD"),
+                "merchant": item.get("merchant"),
+                "raw_text": item.get("raw_text"),
+                "transaction_date": item["created_at"],
+            }
+            supabase_admin.table("transactions").insert(sb_data).execute()
+        except Exception as e:
+            print(f"Supabase sync failed: {e}")
     return item
 
 
@@ -244,6 +251,38 @@ async def _deepseek_reply(text, history):
         r.raise_for_status()
         return r.json()["choices"][0]["message"]["content"]
 
+
+
+GUEST_ID_FILE = DATA / "guest_id.txt"
+
+@app.post("/api/guest")
+def guest_login():
+    """Create or reuse a guest user for database sync."""
+    if not supabase_admin:
+        return {"ok": False, "user_id": None, "mode": "local"}
+    guest_id = None
+    if GUEST_ID_FILE.exists():
+        guest_id = GUEST_ID_FILE.read_text().strip()
+    if not guest_id:
+        try:
+            res = supabase_admin.auth.admin.create_user({
+                "email": f"guest-{uuid.uuid4().hex[:8]}@local.app",
+                "password": uuid.uuid4().hex,
+                "email_confirm": True,
+                "user_metadata": {"display_name": "訪客"}
+            })
+            guest_id = res.user.id
+            GUEST_ID_FILE.write_text(guest_id)
+            # Also create profile
+            supabase_admin.table("profiles").insert({
+                "id": guest_id,
+                "email": res.user.email,
+                "display_name": "訪客"
+            }).execute()
+        except Exception as e:
+            print(f"Guest create failed: {e}")
+            return {"ok": False, "user_id": None, "error": str(e)}
+    return {"ok": True, "user_id": guest_id, "mode": "guest"}
 
 # ---------- Supabase routes (Chan Yin Hei) — optional ----------
 try:
