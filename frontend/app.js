@@ -728,10 +728,7 @@ function localExtract(text) {
 }
 
 function showTab(id) {
-  if (dualPane && id !== "chat" && id !== "history") {
-    dualPane = false;
-    saveLocal("kotau_dual_pane", false);
-  }
+  if (id !== "chat") dualPane = false;
   document.querySelectorAll(".dock button").forEach(function(b) {
     b.classList.toggle("active", b.dataset.tab === id);
   });
@@ -747,6 +744,8 @@ function applyDualPane() {
   document.body.classList.toggle("dual-pane", dualPane);
   var dualBtn = $("#dualPaneBtn");
   if (dualBtn) dualBtn.style.display = window.innerWidth < 720 ? "none" : "";
+  var histBtn = document.querySelector('.dock button[data-tab="history"]');
+  if (histBtn) histBtn.style.display = dualPane ? "none" : "";
   
   var dualBtn = $("#dualPaneBtn");
   if (dualBtn) dualBtn.textContent = dualPane ? "單頁" : "雙頁";
