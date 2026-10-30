@@ -273,15 +273,18 @@ def guest_login():
             })
             guest_id = res.user.id
             GUEST_ID_FILE.write_text(guest_id)
-            # Also create profile
-            supabase_admin.table("profiles").insert({
-                "id": guest_id,
-                "email": res.user.email,
-                "display_name": "訪客"
-            }).execute()
         except Exception as e:
-            print(f"Guest create failed: {e}")
+            print(f"Guest user create failed: {e}")
             return {"ok": False, "user_id": None, "error": str(e)}
+    # Ensure profile exists
+    try:
+        supabase_admin.table("profiles").upsert({
+            "id": guest_id,
+            "email": f"guest-{guest_id[:8]}@local.app",
+            "display_name": "訪客"
+        }).execute()
+    except Exception as e:
+        print(f"Profile upsert failed: {e}")
     return {"ok": True, "user_id": guest_id, "mode": "guest"}
 
 # ---------- Supabase routes (Chan Yin Hei) — optional ----------
