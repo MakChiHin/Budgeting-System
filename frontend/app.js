@@ -739,9 +739,9 @@ function showTab(id) {
 }
 
 function applyDualPane() {
+  if (window.innerWidth < 720) dualPane = false;
   document.body.classList.toggle("dual-pane", dualPane);
-  var histBtn = document.querySelector('.dock button[data-tab="history"]');
-  if (histBtn) histBtn.style.display = dualPane ? "none" : "";
+  
   var dualBtn = $("#dualPaneBtn");
   if (dualBtn) dualBtn.textContent = dualPane ? "單頁" : "雙頁";
 }
