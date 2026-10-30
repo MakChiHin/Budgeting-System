@@ -741,6 +741,8 @@ function showTab(id) {
 function applyDualPane() {
   if (window.innerWidth < 720) dualPane = false;
   document.body.classList.toggle("dual-pane", dualPane);
+  var dualBtn = $("#dualPaneBtn");
+  if (dualBtn) dualBtn.style.display = window.innerWidth < 720 ? "none" : "";
   
   var dualBtn = $("#dualPaneBtn");
   if (dualBtn) dualBtn.textContent = dualPane ? "單頁" : "雙頁";
