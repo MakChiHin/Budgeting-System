@@ -78,7 +78,7 @@ function saveLocal(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
 let txns = loadLocal("kotau_txns", []);
 let budget = loadLocal("kotau_budget", 5000);
 let prefs = { ...DEFAULT_PREFS, ...loadLocal("kotau_prefs", {}) };
-let dualPane = loadLocal("kotau_dual_pane", false);
+let dualPane = false;
 let chatHistory = [];
 let searchTerm = "";
 let selectedMonth = "";
@@ -739,11 +739,11 @@ function showTab(id) {
   applyDualPane();
 }
 
-function applyDualPane() {
+function applyDualPane() { dualPane = false; return; //
   if (window.innerWidth < 720) dualPane = false;
   document.body.classList.toggle("dual-pane", dualPane);
   var dualBtn = $("#dualPaneBtn");
-  if (dualBtn) dualBtn.style.display = window.innerWidth < 720 ? "none" : "";
+  if (dualBtn) dualBtn.style.display = "none";
   var histBtn = document.querySelector('.dock button[data-tab="history"]');
   if (histBtn) histBtn.style.display = dualPane ? "none" : "";
   
