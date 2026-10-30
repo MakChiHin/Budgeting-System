@@ -1,4 +1,24 @@
 const API = "";
+// Guest auto-login
+var guestUserId = localStorage.getItem("kotau_guest_id");
+async function ensureGuest() {
+  if (guestUserId) return guestUserId;
+  try {
+    var r = await fetch(API + "/api/guest", { method: "POST" });
+    if (r.ok) {
+      var data = await r.json();
+      if (data.ok && data.user_id) {
+        guestUserId = data.user_id;
+        localStorage.setItem("kotau_guest_id", guestUserId);
+        return guestUserId;
+      }
+    }
+  } catch (e) { /* offline */ }
+  return null;
+}
+ensureGuest();
+
+
 const $ = (s, r = document) => r.querySelector(s);
 const chatLog = $("#chatLog");
 const bookList = $("#bookList");
@@ -187,6 +207,7 @@ function addCard(ext) {
 
 async function saveTxn(data) {
   data.id = data.id || crypto.randomUUID();
+  if (guestUserId) data.user_id = guestUserId;
   data.created_at = new Date().toISOString();
   if (!data.splits) data.splits = parseSplit(data.split_with);
   txns.unshift(data);
@@ -949,7 +970,11 @@ function renderHome() {
   if (tips) {
     var tipsHtml = "";
     if (total > budget) tipsHtml += '<div class="tip">本月已超支，建議先檢視大額項目。</div>';
-    if ((catMap["Food & Dining"] || 0) > total * 0.3) tipsHtml += '<div class="tip">飲食佔比較高，可考慮多喺屋企煮。</div>';
+    if ((catMap["Food & Dining"] || 0) > total * 0.25) tipsHtml += '<div class="tip">飲食佔比較高，可考慮多喺屋企煮，或設定每餐上限。</div>';
+    if ((catMap["Transport"] || 0) > 0) tipsHtml += '<div class="tip">短途可改用八達通優惠或步行，慳交通費。</div>';
+    if ((catMap["Transfer"] || 0) > total * 0.3) tipsHtml += '<div class="tip">轉帳／過數金額較大，確認係必要支出。</div>';
+    tipsHtml += '<div class="tip">有 AA 未還清，可提醒朋友盡快還。</div>';
+    tipsHtml += '<div class="tip">定期睇統計報告，掌握每月開支分佈。</div>';
     if (!tipsHtml) tipsHtml = '<div class="tip">開支正常，繼續保持。</div>';
     tips.innerHTML = tipsHtml;
   }
