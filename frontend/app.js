@@ -207,8 +207,11 @@ function addCard(ext) {
 
 async function saveTxn(data) {
   data.id = data.id || crypto.randomUUID();
-  if (!guestUserId) await ensureGuest();
+  if (!guestUserId) {
+    guestUserId = await ensureGuest();
+  }
   if (guestUserId) data.user_id = guestUserId;
+  else console.log("No guest user_id");
   data.created_at = new Date().toISOString();
   if (!data.splits) data.splits = parseSplit(data.split_with);
   txns.unshift(data);
