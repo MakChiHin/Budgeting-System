@@ -225,11 +225,11 @@ html, body {
 }
 @media (min-width: 720px) {
   body.dual-pane .workspace { flex-direction: row; }
+  body.dual-pane .panel { display: none !important; }
   body.dual-pane .panel#chat,
   body.dual-pane .panel#history { display: flex !important; }
   body.dual-pane .panel#chat { flex: 1.1; border-right: 1px solid var(--line); }
   body.dual-pane .panel#history { flex: 0.9; }
-  body.dual-pane .panel#chart { display: none !important; }
   body.dual-pane.desktop-chart .panel#chat,
   body.dual-pane.desktop-chart .panel#history { display: none !important; }
   body.dual-pane.desktop-chart .panel#chart { display: flex !important; flex: 1; }
