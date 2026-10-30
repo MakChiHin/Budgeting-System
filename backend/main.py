@@ -199,6 +199,8 @@ def add_txn(body: TxnIn):
     item["created_at"] = datetime.now(timezone.utc).isoformat()
     rows.insert(0, item)
     _save_txns(rows)
+    if not item.get("user_id") and GUEST_ID_FILE.exists():
+        item["user_id"] = GUEST_ID_FILE.read_text().strip()
     print(f"Sync check: admin={bool(supabase_admin)}, user_id={item.get('user_id')}")
     if supabase_admin and item.get("user_id"):
         try:
