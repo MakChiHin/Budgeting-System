@@ -237,9 +237,7 @@ html, body {
   body.dual-pane.desktop-chart .panel#chat,
   body.dual-pane.desktop-chart .panel#history { display: none !important; }
   body.dual-pane.desktop-chart .panel#chart { display: flex !important; flex: 1; }
-  body.dual-pane .dock button[data-tab="home"],
-  body.dual-pane .dock button[data-tab="tips"],
-  body.dual-pane .dock button[data-tab="chart"] { display: none; }
+  
 }
 
 /* UX improvements */
