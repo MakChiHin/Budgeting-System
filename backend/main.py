@@ -199,6 +199,7 @@ def add_txn(body: TxnIn):
     item["created_at"] = datetime.now(timezone.utc).isoformat()
     rows.insert(0, item)
     _save_txns(rows)
+    print(f"Sync check: admin={bool(supabase_admin)}, user_id={item.get('user_id')}")
     if supabase_admin and item.get("user_id"):
         try:
             sb_data = {
@@ -210,9 +211,13 @@ def add_txn(body: TxnIn):
                 "raw_text": item.get("raw_text"),
                 "transaction_date": item["created_at"],
             }
+            print(f"Syncing: {sb_data}")
             supabase_admin.table("transactions").insert(sb_data).execute()
+            print("Sync OK")
         except Exception as e:
             print(f"Supabase sync failed: {e}")
+    else:
+        print("Sync skipped")
     return item
 
 
