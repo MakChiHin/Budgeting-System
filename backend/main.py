@@ -294,12 +294,13 @@ def guest_login():
         print(f"Profile upsert failed: {e}")
     return {"ok": True, "user_id": guest_id, "mode": "guest"}
 
-# ---------- Supabase routes (Chan Yin Hei) — optional ----------
+# ---------- Supabase routes (Edwin) — optional ----------
 try:
-    from routers import users as sb_users, transactions as sb_txns, lookup as sb_lookup
+    from routers import users as sb_users, transactions as sb_txns, lookup as sb_lookup, sync as sb_sync
     app.include_router(sb_users.router)
     app.include_router(sb_txns.router)
     app.include_router(sb_lookup.router)
+    app.include_router(sb_sync.router)
 except Exception:
     pass  # no supabase key / package → local mode only
 
