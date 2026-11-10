@@ -30,8 +30,17 @@
         <div class="list" id="recentList"></div>
       </section>
       <section class="panel" id="tips">
-        <div class="pane-head"><h2>慳錢建議</h2><p>根據本月開支。</p></div>
-        <div id="tipsList"></div>
+        <div style="display:flex;gap:8px;padding:8px 16px;background:#fff;border-bottom:1px solid var(--line);">
+          <button class="active" data-role="parent" style="flex:1;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--teal);color:#fff;cursor:pointer;">家長</button>
+          <button data-role="partner" style="flex:1;padding:8px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer;">另一半</button>
+        </div>
+        <div style="flex:1;display:flex;align-items:flex-end;justify-content:center;padding:20px;">
+          <img id="charPic" src="" style="width:280px;height:340px;object-fit:cover;border-radius:16px 16px 0 0;">
+        </div>
+        <div id="dialogue" style="background:#fff;border-top:3px solid var(--teal);padding:16px;cursor:pointer;">
+          <div id="charName" style="color:var(--teal);font-weight:700;font-size:13px;">媽媽</div>
+          <div id="charText" style="font-size:15px;margin-top:4px;">飲食開支有啲高，建議多啲喺屋企煮，可以慳返好多。</div>
+        </div>
       </section>
       <section class="panel" id="chat">
         <div class="chat" id="chatLog"></div>
@@ -79,7 +88,14 @@
       </section>
     </main>
 
-    <nav class="dock" id="dock">
+    
+      <section class="panel" id="settings">
+        <div id="onboardChat" style="height:280px;overflow-y:scroll;padding:16px;background:var(--cream);"></div>
+        <div style="padding:12px;background:#fff;border-top:1px solid var(--line);display:flex;gap:8px;">
+          <input id="onboardInput" placeholder="回覆..." style="flex:1;padding:10px;border:1px solid var(--line);border-radius:20px;">
+          <button id="onboardSend" style="background:var(--teal);color:#fff;border:none;border-radius:50%;width:40px;height:40px;cursor:pointer;">▶</button>
+        </div>
+      </section><nav class="dock" id="dock">
       <button class="active" data-tab="home">主頁</button>
       <button data-tab="tips">慳錢建議</button>
       <button data-tab="chat">新增紀錄</button>
