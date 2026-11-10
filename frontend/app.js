@@ -959,15 +959,19 @@ function renderHome() {
   var legend = document.getElementById("pieLegend");
   if (svg && data.length) {
     var acc = 0, r = 70, cx = 80, cy = 80, paths = "";
-    data.forEach(function(d) {
-      var a1 = (acc / sum) * Math.PI * 2 - Math.PI / 2;
-      acc += d.value;
-      var a2 = (acc / sum) * Math.PI * 2 - Math.PI / 2;
-      var large = (a2 - a1) > Math.PI ? 1 : 0;
-      var x1 = cx + r * Math.cos(a1), y1 = cy + r * Math.sin(a1);
-      var x2 = cx + r * Math.cos(a2), y2 = cy + r * Math.sin(a2);
-      paths += '<path d="M' + cx + ',' + cy + ' L' + x1 + ',' + y1 + ' A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2 + ' Z" fill="' + d.color + '"/>';
-    });
+    if (data.length === 1) {
+      paths = '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="' + data[0].color + '"/>';
+    } else {
+      data.forEach(function(d) {
+        var a1 = (acc / sum) * Math.PI * 2 - Math.PI / 2;
+        acc += d.value;
+        var a2 = (acc / sum) * Math.PI * 2 - Math.PI / 2;
+        var large = (a2 - a1) > Math.PI ? 1 : 0;
+        var x1 = cx + r * Math.cos(a1), y1 = cy + r * Math.sin(a1);
+        var x2 = cx + r * Math.cos(a2), y2 = cy + r * Math.sin(a2);
+        paths += '<path d="M' + cx + ',' + cy + ' L' + x1 + ',' + y1 + ' A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2 + ' Z" fill="' + d.color + '"/>';
+      });
+    }
     svg.innerHTML = paths;
     if (legend) legend.innerHTML = data.map(function(d) { return '<span><i style="background:' + d.color + '"></i>' + d.name + ' ' + (d.value/sum*100).toFixed(0) + '%</span>'; }).join("");
   }
