@@ -996,3 +996,68 @@ function renderHome() {
 var origRender = renderChart;
 renderChart = function() { origRender(); renderHome(); };
 renderHome();
+
+// Character tips
+const charTips = {
+  parent: { name: "媽媽", texts: ["飲食開支有啲高，建議多啲喺屋企煮，可以慳返好多。", "搭車費可以考慮用八達通優惠或者短途步行。", "記得要追人還錢，唔好成日俾人佔便宜。"] },
+  partner: { name: "另一半", texts: ["喂～你飲食開支高咗喎，不如我哋多啲喺屋企煮？", "搭車咁貴，短途我哋行路約會都得㗎～", "有人欠你錢要記得追呀。"] }
+};
+let charRole = "parent", charIdx = 0;
+document.querySelectorAll("[data-role]").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll("[data-role]").forEach(b => { b.style.background = "#fff"; b.style.color = "#333"; });
+    btn.style.background = "var(--teal)";
+    btn.style.color = "#fff";
+    charRole = btn.dataset.role;
+    charIdx = 0;
+    showCharTip();
+  };
+});
+function showCharTip() {
+  const t = charTips[charRole];
+  var nameEl = document.getElementById("charName");
+  var textEl = document.getElementById("charText");
+  if (nameEl) nameEl.textContent = t.name;
+  if (textEl) textEl.textContent = t.texts[charIdx % t.texts.length];
+  charIdx++;
+}
+var dlg = document.getElementById("dialogue");
+if (dlg) dlg.onclick = showCharTip;
+
+// Onboarding settings
+const qs = [
+  { q: "你好！你係學生定打工仔？", key: "role" },
+  { q: "你今年幾多歲？", key: "age" },
+  { q: "你係男定女？", key: "gender" }
+];
+let step = 0, profile = {};
+function addOnboardMsg(text, isUser) {
+  var chat = document.getElementById("onboardChat");
+  if (!chat) return;
+  const div = document.createElement("div");
+  div.style.cssText = "margin:8px 0;padding:10px 14px;border-radius:12px;max-width:80%;" + (isUser ? "margin-left:auto;background:#d4edda;" : "background:#fff;border:1px solid #e0d8cc;");
+  div.textContent = text;
+  chat.appendChild(div);
+  chat.scrollTop = 9999;
+}
+function askNext() {
+  if (step >= qs.length) {
+    addOnboardMsg("設定完成！你係" + profile.role + "，" + profile.age + "歲，" + profile.gender + "。", false);
+    localStorage.setItem("userProfile", JSON.stringify(profile));
+    return;
+  }
+  addOnboardMsg(qs[step].q, false);
+}
+var sendBtn = document.getElementById("onboardSend");
+if (sendBtn) {
+  sendBtn.onclick = () => {
+    const input = document.getElementById("onboardInput");
+    if (!input.value.trim()) return;
+    addOnboardMsg(input.value, true);
+    profile[qs[step].key] = input.value;
+    input.value = "";
+    step++;
+    setTimeout(askNext, 300);
+  };
+  askNext();
+}
