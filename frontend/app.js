@@ -1000,7 +1000,8 @@ renderHome();
 // Character tips
 const charTips = {
   parent: { name: "媽媽", texts: ["飲食開支有啲高，建議多啲喺屋企煮，可以慳返好多。", "搭車費可以考慮用八達通優惠或者短途步行。", "記得要追人還錢，唔好成日俾人佔便宜。"] },
-  partner: { name: "另一半", texts: ["喂～你飲食開支高咗喎，不如我哋多啲喺屋企煮？", "搭車咁貴，短途我哋行路約會都得㗎～", "有人欠你錢要記得追呀。"] }
+  partner: { name: "另一半", texts: ["喂～你飲食開支高咗喎，不如我哋多啲喺屋企煮？", "搭車咁貴，短途我哋行路約會都得㗎～", "有人欠你錢要記得追呀。"] },
+  partner_m: { name: "另一半", texts: ["你飲食開支高咗，不如多啲喺屋企煮？", "搭車貴，短途可以行路。", "有人欠你錢記得追。"] }
 };
 let charRole = "parent", charIdx = 0;
 document.querySelectorAll("[data-role]").forEach(btn => {
@@ -1019,7 +1020,9 @@ function showCharTip() {
   var textEl = document.getElementById("charText");
   var picEl = document.getElementById("charPic");
   if (nameEl) nameEl.textContent = t.name;
-  if (textEl) textEl.textContent = t.texts[charIdx % t.texts.length];
+  const profile = JSON.parse(localStorage.getItem("userProfile") || "{}");
+  const tipSet = (charRole === "partner" && profile.gender === "女") ? charTips.partner_m : t;
+  if (textEl) textEl.textContent = tipSet.texts[charIdx % tipSet.texts.length];
   if (picEl) {
     const profile = JSON.parse(localStorage.getItem("userProfile") || "{}");
     if (charRole === "partner") {
@@ -1073,4 +1076,13 @@ if (sendBtn) {
     setTimeout(askNext, 300);
   };
   askNext();
+}
+
+// Reset settings
+var resetBtn = document.getElementById("resetSettings");
+if (resetBtn) {
+  resetBtn.onclick = () => {
+    localStorage.removeItem("userProfile");
+    location.reload();
+  };
 }
