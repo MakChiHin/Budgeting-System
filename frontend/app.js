@@ -1020,7 +1020,18 @@ function showCharTip() {
   var picEl = document.getElementById("charPic");
   if (nameEl) nameEl.textContent = t.name;
   if (textEl) textEl.textContent = t.texts[charIdx % t.texts.length];
-  if (picEl) picEl.src = charRole === "partner" ? "./images/partner.jpg" : "./images/parent.jpg";
+  if (picEl) {
+    const profile = JSON.parse(localStorage.getItem("userProfile") || "{}");
+    if (charRole === "partner") {
+      if (profile.role === "學生") {
+        picEl.src = profile.gender === "女" ? "./images/school_m.jpg" : "./images/school_f.jpg";
+      } else {
+        picEl.src = profile.gender === "女" ? "./images/school_m.jpg" : "./images/partner.jpg";
+      }
+    } else {
+      picEl.src = "./images/parent.jpg";
+    }
+  }
   charIdx++;
 }
 var dlg = document.getElementById("dialogue");
