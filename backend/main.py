@@ -211,7 +211,9 @@ def add_txn(body: TxnIn):
                 "currency": item.get("currency", "HKD"),
                 "merchant": item.get("merchant"),
                 "raw_text": item.get("raw_text"),
-                "transaction_date": item["created_at"],
+                "input_type": "text",
+                "transaction_date": item.get("created_at") or item.get("transaction_date"),
+                "is_synced": True,
             }
             print(f"Syncing: {sb_data}")
             supabase_admin.table("transactions").insert(sb_data).execute()
