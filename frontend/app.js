@@ -1017,8 +1017,10 @@ function showCharTip() {
   const t = charTips[charRole];
   var nameEl = document.getElementById("charName");
   var textEl = document.getElementById("charText");
+  var picEl = document.getElementById("charPic");
   if (nameEl) nameEl.textContent = t.name;
   if (textEl) textEl.textContent = t.texts[charIdx % t.texts.length];
+  if (picEl) picEl.src = charRole === "partner" ? "./images/partner.jpg" : "./images/parent.jpg";
   charIdx++;
 }
 var dlg = document.getElementById("dialogue");
