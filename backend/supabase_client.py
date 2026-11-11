@@ -16,3 +16,4 @@ if SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY:
     supabase = create_client(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)
     if SUPABASE_SECRET_KEY:
         supabase_admin = create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
+

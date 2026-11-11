@@ -143,34 +143,25 @@ def api_extract(body: TextIn):
 # === 【核心修改】讓網頁聊天時完美接入你的 Hugging Face Qwen 廣東話模型 ===
 @app.post("/api/chat")
 async def api_chat(body: ChatIn):
-    # 1. 依然保留原有的局部 NER 規則提取（以便右上角規則引擎開關與卡片功能正常運作）
+    # 1. 保留原有的局部 NER 規則提取（以便右上角規則引擎開關與卡片功能正常運作）
     parsed = extract(body.text)
     looks_like_expense = parsed.get("amount") is not None or any(
         w in body.text for w in ("蚊", "畀", "食", "搭", "PayMe", "FPS", "八達通")
     )
     
-    # 2. 優先呼叫你的 Qwen 2.5 廣東話專用賬單模型來生成充滿本土人情味的回覆
+    # 2. 優先呼叫 Qwen 2.5 廣東話專用賬單模型來生成充滿本土人情味的回覆
     if os.getenv("HF_TOKEN"):
         try:
             reply = await ask_cantonese_ai(body.text)
         except Exception as exc:
-            # 如果 Hugging Face 崩潰或超時，安全降級回原本的 DeepSeek 或本地回覆
-            if os.getenv("DEEPSEEK_API_KEY"):
-                reply = await _deepseek_reply(body.text, body.history)
-            else:
-                reply = _local_reply(body.text, parsed, looks_like_expense) + f"\n(HF error: {exc.__class__.__name__})"
+            # 如果 Hugging Face 崩潰或超時，降級回本地規則回覆
+            reply = _local_reply(body.text, parsed, looks_like_expense) + f"\n(HF error: {exc.__class__.__name__})"
     
-    # 3. 如果未設定 HF_TOKEN，則維持系統原先的 DeepSeek / 規則引擎邏輯
+    # 3. 如果未設定 HF_TOKEN，則直接使用本地規則引擎邏輯
     else:
         reply = _local_reply(body.text, parsed, looks_like_expense)
-        if os.getenv("DEEPSEEK_API_KEY") and not looks_like_expense:
-            try:
-                reply = await _deepseek_reply(body.text, body.history)
-            except Exception as exc:
-                reply = _local_reply(body.text, parsed, looks_like_expense) + f"\n(DeepSeek error: {exc.__class__.__name__})"
                 
     return {"reply": reply, "extraction": parsed if looks_like_expense else None}
-
 
 @app.get("/api/transactions")
 def list_txns():
