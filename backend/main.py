@@ -171,20 +171,6 @@ async def api_chat(body: ChatIn):
                 
     return {"reply": reply, "extraction": parsed if looks_like_expense else None}
 
-@app.post("/api/chat")
-async def api_chat(body: ChatIn):
-    parsed = extract(body.text)
-    looks_like_expense = parsed.get("amount") is not None or any(
-        w in body.text for w in ("蚊", "畀", "食", "搭", "PayMe", "FPS", "八達通")
-    )
-    reply = _local_reply(body.text, parsed, looks_like_expense)
-    if os.getenv("DEEPSEEK_API_KEY") and not looks_like_expense:
-        try:
-            reply = await _deepseek_reply(body.text, body.history)
-        except Exception as exc:
-            reply = _local_reply(body.text, parsed, looks_like_expense) + f"\n(DeepSeek error: {exc.__class__.__name__})"
-    return {"reply": reply, "extraction": parsed if looks_like_expense else None}
-
 
 @app.get("/api/transactions")
 def list_txns():
