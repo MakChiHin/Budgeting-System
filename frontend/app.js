@@ -1096,3 +1096,45 @@ if (resetBtn) {
     location.reload();
   };
 }
+
+// ===== Supabase Auth Login =====
+const SUPABASE_URL = "https://hdihxvrhboesqlvcowwm.supabase.co";
+const SUPABASE_KEY = "sb_publishable_2yIJb1yKPYUppPyCeA-zGg_pyQnnkes";
+let supabaseClient = null;
+
+async function initLogin() {
+  if (!window.supabase) return;
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const { data } = await supabaseClient.auth.getSession();
+  const screen = document.getElementById("loginScreen");
+  if (screen && data.session) screen.classList.add("hidden");
+}
+initLogin();
+
+var loginBtn = document.getElementById("loginBtn");
+if (loginBtn) {
+  loginBtn.onclick = async function() {
+    const email = document.getElementById("loginUser").value.trim();
+    const password = document.getElementById("loginPass").value;
+    const errEl = document.getElementById("loginError");
+    if (errEl) errEl.textContent = "";
+    if (!supabaseClient) { if (errEl) errEl.textContent = "Supabase 未載入"; return; }
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if (error) {
+      if (errEl) errEl.textContent = "登入失敗：" + error.message;
+    } else {
+      var screen = document.getElementById("loginScreen");
+      if (screen) screen.classList.add("hidden");
+    }
+  };
+  var passInput = document.getElementById("loginPass");
+  if (passInput) passInput.onkeydown = function(e) { if (e.key === "Enter") loginBtn.click(); };
+}
+
+var logoutBtn = document.getElementById("logoutBtn");
+if (logoutBtn) {
+  logoutBtn.onclick = async function() {
+    if (supabaseClient) await supabaseClient.auth.signOut();
+    location.reload();
+  };
+}
