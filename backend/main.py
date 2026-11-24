@@ -284,6 +284,31 @@ except Exception:
     pass  # no supabase key / package → local mode only
 
 
+
+@app.post("/api/reset-password")
+async def reset_password(body: dict):
+    """Simple password reset for demo. Uses admin client."""
+    email = body.get("email", "").strip()
+    new_password = body.get("new_password", "")
+    if not email or len(new_password) < 6:
+        return {"ok": False, "error": "電郵或密碼無效"}
+    if not supabase_admin:
+        return {"ok": False, "error": "Supabase 未設定"}
+    try:
+        # List users and find by email
+        users = supabase_admin.auth.admin.list_users()
+        target = None
+        for u in users:
+            if u.email == email:
+                target = u
+                break
+        if not target:
+            return {"ok": False, "error": "搵唔到呢個電郵"}
+        supabase_admin.auth.admin.update_user_by_id(target.id, {"password": new_password})
+        return {"ok": True}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
 frontend_dir = ROOT / "frontend"
 if frontend_dir.exists():
     app.mount("/", StaticFiles(directory=str(frontend_dir), html=True), name="frontend")
