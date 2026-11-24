@@ -15,11 +15,27 @@
       <div class="avatar" style="width:60px;height:60px;font-size:26px;margin-bottom:10px;">帳</div>
       <h2>口頭帳</h2>
       <p class="sub">請先登入</p>
-      <div class="login-form">
+      <div class="auth-tabs">
+        <button type="button" class="active" data-auth="login">登入</button>
+        <button type="button" data-auth="register">註冊</button>
+        <button type="button" data-auth="forgot">忘記密碼</button>
+      </div>
+      <div class="auth-form active" id="formLogin">
         <input id="loginUser" placeholder="電郵" autocomplete="off">
         <input id="loginPass" type="password" placeholder="密碼" autocomplete="off">
         <button type="button" id="loginBtn">登入</button>
         <div class="login-error" id="loginError"></div>
+      </div>
+      <div class="auth-form" id="formRegister">
+        <input id="regUser" placeholder="電郵" autocomplete="off">
+        <input id="regPass" type="password" placeholder="密碼（至少 6 位）" autocomplete="off">
+        <button type="button" id="regBtn">註冊</button>
+        <div class="login-error" id="regError"></div>
+      </div>
+      <div class="auth-form" id="formForgot">
+        <input id="forgotEmail" placeholder="輸入電郵" autocomplete="off">
+        <button type="button" id="forgotBtn">發送重設連結</button>
+        <div class="login-error" id="forgotMsg"></div>
       </div>
       <div class="creds">
         測試帳號：<b>demo@example.com</b><br>
