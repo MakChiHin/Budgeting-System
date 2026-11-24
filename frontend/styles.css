@@ -285,3 +285,13 @@ mark { background: #fff3cd; padding: 0 2px; border-radius: 2px; }
 .auth-tabs button.active { background: var(--teal); color: #fff; border-color: var(--teal); }
 .auth-form { display: none; width: 100%; max-width: 280px; }
 .auth-form.active { display: block; }
+
+.auth-form input {
+  width: 100%; padding: 12px 14px; margin: 6px 0; border: 1px solid var(--line); border-radius: 10px;
+  font: inherit; font-size: 15px; outline: none; display: block;
+}
+.auth-form button {
+  width: 100%; padding: 12px; margin-top: 10px; background: var(--teal); color: #fff;
+  border: none; border-radius: 10px; font: inherit; font-size: 15px; cursor: pointer;
+}
+.app { position: relative; }
