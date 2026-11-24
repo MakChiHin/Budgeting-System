@@ -279,3 +279,9 @@ mark { background: #fff3cd; padding: 0 2px; border-radius: 2px; }
 }
 .creds b { color: var(--navy); }
 .login-error { color: #e76f51; font-size: 13px; margin-top: 8px; text-align: center; }
+
+.auth-tabs { display: flex; gap: 8px; margin-bottom: 12px; width: 100%; max-width: 280px; }
+.auth-tabs button { flex: 1; padding: 8px; border: 1px solid var(--line); background: #fff; border-radius: 8px; cursor: pointer; font: inherit; font-size: 13px; }
+.auth-tabs button.active { background: var(--teal); color: #fff; border-color: var(--teal); }
+.auth-form { display: none; width: 100%; max-width: 280px; }
+.auth-form.active { display: block; }
