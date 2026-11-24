@@ -1158,12 +1158,15 @@ if (regBtn) {
     var email = document.getElementById("regUser").value.trim();
     var password = document.getElementById("regPass").value;
     var err = document.getElementById("regError");
-    if (err) err.textContent = "";
-    if (!supabaseClient) { if (err) err.textContent = "Supabase 未載入"; return; }
+    if (err) err.textContent = "處理中...";
+    if (!supabaseClient) { if (err) err.textContent = "Supabase 未載入，請刷新"; return; }
+    if (!email || !email.includes("@")) { if (err) err.textContent = "請輸入有效電郵"; return; }
     if (password.length < 6) { if (err) err.textContent = "密碼至少 6 位"; return; }
-    var result = await supabaseClient.auth.signUp({ email: email, password: password });
-    if (result.error) { if (err) err.textContent = result.error.message; }
-    else { if (err) err.textContent = "註冊成功！請檢查電郵或直接登入。"; }
+    try {
+      var result = await supabaseClient.auth.signUp({ email: email, password: password });
+      if (result.error) { if (err) err.textContent = "錯誤：" + result.error.message; }
+      else { if (err) err.textContent = "註冊成功！如需確認請檢查電郵，或直接試登入。"; }
+    } catch (e) { if (err) err.textContent = "錯誤：" + e.message; }
   };
 }
 
@@ -1173,10 +1176,13 @@ if (forgotBtn) {
   forgotBtn.onclick = async function() {
     var email = document.getElementById("forgotEmail").value.trim();
     var msg = document.getElementById("forgotMsg");
-    if (msg) msg.textContent = "";
-    if (!supabaseClient) { if (msg) msg.textContent = "Supabase 未載入"; return; }
-    var result = await supabaseClient.auth.resetPasswordForEmail(email);
-    if (result.error) { if (msg) msg.textContent = result.error.message; }
-    else { if (msg) msg.textContent = "已發送重設連結到你的電郵。"; }
+    if (msg) msg.textContent = "處理中...";
+    if (!supabaseClient) { if (msg) msg.textContent = "Supabase 未載入，請刷新"; return; }
+    if (!email || !email.includes("@")) { if (msg) msg.textContent = "請輸入有效電郵"; return; }
+    try {
+      var result = await supabaseClient.auth.resetPasswordForEmail(email);
+      if (result.error) { if (msg) msg.textContent = "錯誤：" + result.error.message; }
+      else { if (msg) msg.textContent = "已發送重設連結到你的電郵。"; }
+    } catch (e) { if (msg) msg.textContent = "錯誤：" + e.message; }
   };
 }
