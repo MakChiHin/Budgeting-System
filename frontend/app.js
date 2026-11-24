@@ -1175,14 +1175,23 @@ var forgotBtn = document.getElementById("forgotBtn");
 if (forgotBtn) {
   forgotBtn.onclick = async function() {
     var email = document.getElementById("forgotEmail").value.trim();
+    var newPass = document.getElementById("forgotNewPass") ? document.getElementById("forgotNewPass").value : "";
     var msg = document.getElementById("forgotMsg");
     if (msg) msg.textContent = "處理中...";
-    if (!supabaseClient) { if (msg) msg.textContent = "Supabase 未載入，請刷新"; return; }
     if (!email || !email.includes("@")) { if (msg) msg.textContent = "請輸入有效電郵"; return; }
+    if (newPass.length < 6) { if (msg) msg.textContent = "新密碼至少 6 位"; return; }
     try {
-      var result = await supabaseClient.auth.resetPasswordForEmail(email);
-      if (result.error) { if (msg) msg.textContent = "錯誤：" + result.error.message; }
-      else { if (msg) msg.textContent = "已發送重設連結到你的電郵。"; }
+      var r = await fetch("/api/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email, new_password: newPass })
+      });
+      var result = await r.json();
+      if (result.ok) { 
+        if (msg) { msg.style.color = "var(--teal)"; msg.textContent = "密碼已重設！請用新密碼登入。"; }
+      } else {
+        if (msg) msg.textContent = result.error || "重設失敗";
+      }
     } catch (e) { if (msg) msg.textContent = "錯誤：" + e.message; }
   };
 }
