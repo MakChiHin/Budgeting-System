@@ -1190,6 +1190,20 @@ if (forgotBtn) {
 // Handle password reset from email link
 async function handlePasswordReset() {
   const hash = window.location.hash;
+  console.log("Hash:", hash);
+  
+  // Show error if link expired
+  if (hash.includes("error") || hash.includes("otp_expired")) {
+    var screen = document.getElementById("loginScreen");
+    if (screen) {
+      var msg = document.createElement("div");
+      msg.style.cssText = "color:#e76f51;text-align:center;margin-top:12px;font-size:13px;";
+      msg.textContent = "連結已過期，請重新發送。";
+      screen.appendChild(msg);
+    }
+    return;
+  }
+  
   if (!hash.includes("type=recovery") && !hash.includes("access_token")) return;
   if (!supabaseClient) return;
   
