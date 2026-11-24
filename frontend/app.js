@@ -1186,3 +1186,50 @@ if (forgotBtn) {
     } catch (e) { if (msg) msg.textContent = "錯誤：" + e.message; }
   };
 }
+
+// Handle password reset from email link
+async function handlePasswordReset() {
+  const hash = window.location.hash;
+  if (!hash.includes("type=recovery") && !hash.includes("access_token")) return;
+  if (!supabaseClient) return;
+  
+  // Show reset form
+  var screen = document.getElementById("loginScreen");
+  if (screen) screen.classList.remove("hidden");
+  
+  // Create reset form if not exists
+  if (!document.getElementById("resetForm")) {
+    var form = document.createElement("div");
+    form.id = "resetForm";
+    form.innerHTML = '<div style="width:100%;max-width:280px;margin-top:12px;">' +
+      '<p style="text-align:center;font-size:14px;margin-bottom:8px;">設定新密碼</p>' +
+      '<input id="newPass" type="password" placeholder="新密碼（至少 6 位）" style="width:100%;padding:12px;margin:6px 0;border:1px solid var(--line);border-radius:10px;font:inherit;">' +
+      '<input id="newPass2" type="password" placeholder="再輸入一次" style="width:100%;padding:12px;margin:6px 0;border:1px solid var(--line);border-radius:10px;font:inherit;">' +
+      '<button id="resetPassBtn" style="width:100%;padding:12px;margin-top:8px;background:var(--teal);color:#fff;border:none;border-radius:10px;cursor:pointer;">確認重設</button>' +
+      '<div id="resetMsg" style="text-align:center;font-size:13px;margin-top:8px;color:#e76f51;"></div></div>';
+    screen.appendChild(form);
+    
+    document.getElementById("resetPassBtn").onclick = async function() {
+      var p1 = document.getElementById("newPass").value;
+      var p2 = document.getElementById("newPass2").value;
+      var msg = document.getElementById("resetMsg");
+      if (p1.length < 6) { msg.textContent = "密碼至少 6 位"; return; }
+      if (p1 !== p2) { msg.textContent = "兩次密碼唔一致"; return; }
+      msg.textContent = "處理中...";
+      var result = await supabaseClient.auth.updateUser({ password: p1 });
+      if (result.error) { msg.textContent = result.error.message; }
+      else { 
+        msg.style.color = "var(--teal)";
+        msg.textContent = "密碼已更新！請用新密碼登入。";
+        setTimeout(function() { location.href = "/"; }, 2000);
+      }
+    };
+  }
+}
+
+// Call after supabase init
+var origInit = initLogin;
+initLogin = async function() {
+  await origInit();
+  setTimeout(handlePasswordReset, 500);
+};
